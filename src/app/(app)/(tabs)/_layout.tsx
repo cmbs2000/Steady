@@ -1,0 +1,33 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Tabs } from 'expo-router/js-tabs';
+
+import { colors } from '@/theme';
+
+export default function TabsLayout() {
+  return (
+    <Tabs
+      screenOptions={{
+        headerStyle: { backgroundColor: colors.surface },
+        headerTintColor: colors.text,
+        headerShadowVisible: false,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
+      }}>
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Dashboard',
+          tabBarIcon: ({ color, size }) => <Ionicons name="people" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="library"
+        options={{
+          title: 'Library',
+          tabBarIcon: ({ color, size }) => <Ionicons name="library" color={color} size={size} />,
+        }}
+      />
+    </Tabs>
+  );
+}
