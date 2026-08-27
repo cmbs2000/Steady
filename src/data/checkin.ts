@@ -61,7 +61,8 @@ export function useCheckin(sponseeId: string | undefined) {
 export async function setCheckinAssignmentStatus(
   sponseeId: string,
   assignmentId: string,
-  status: 'pending' | 'done' | 'overdue'
+  status: 'pending' | 'done' | 'overdue',
+  worksheetTitle?: string
 ) {
   const { error } = await supabase.rpc('checkin_set_assignment_status', {
     p_sponsee_id: sponseeId,
@@ -69,4 +70,12 @@ export async function setCheckinAssignmentStatus(
     p_status: status,
   });
   if (error) throw error;
+
+  // Best-effort: the sponsor finding out is a nicety, not something the
+  // sponsee's check-in action should ever fail or wait on.
+  if (status === 'done') {
+    supabase.functions
+      .invoke('notify-sponsor', { body: { sponsee_id: sponseeId, worksheet_title: worksheetTitle } })
+      .catch(() => {});
+  }
 }

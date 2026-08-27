@@ -6,6 +6,7 @@
 create table public.sponsors (
   id uuid primary key references auth.users (id) on delete cascade,
   email text not null,
+  push_token text,
   created_at timestamptz not null default now()
 );
 

@@ -20,9 +20,9 @@ export default function SponseeCheckinScreen() {
     refetch();
   }, [refetch]);
 
-  const toggleDone = async (assignmentId: string, current: 'done' | 'pending' | 'overdue') => {
+  const toggleDone = async (assignmentId: string, current: 'done' | 'pending' | 'overdue', worksheetTitle: string) => {
     if (!sponseeId) return;
-    await setCheckinAssignmentStatus(sponseeId, assignmentId, current === 'done' ? 'pending' : 'done');
+    await setCheckinAssignmentStatus(sponseeId, assignmentId, current === 'done' ? 'pending' : 'done', worksheetTitle);
     refetch();
   };
 
@@ -88,7 +88,7 @@ export default function SponseeCheckinScreen() {
                 <View style={styles.itemHeader}>
                   <Pressable
                     style={[styles.checkbox, isDone && styles.checkboxChecked]}
-                    onPress={() => toggleDone(a.assignmentId, a.status)}
+                    onPress={() => toggleDone(a.assignmentId, a.status, a.worksheetTitle)}
                     hitSlop={8}>
                     {isDone && <Ionicons name="checkmark" size={16} color={colors.surface} />}
                   </Pressable>
