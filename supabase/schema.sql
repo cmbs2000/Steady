@@ -132,6 +132,7 @@ create table public.assignments (
   status text not null default 'pending' check (status in ('pending', 'done', 'overdue')),
   assigned_date date not null default current_date,
   due_date date,
+  overdue_notified_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -332,3 +333,25 @@ revoke execute on function public.create_recurring_assignments() from public, an
 create extension if not exists pg_cron;
 
 select cron.schedule('create-recurring-assignments', '5 0 * * *', $$select public.create_recurring_assignments();$$);
+
+-- ─── overdue notifications ───────────────────────────────────────────────
+-- Once daily, ping the notify-overdue edge function (deployed separately,
+-- see supabase/functions/notify-overdue) which finds newly-overdue
+-- assignments and pushes a one-time heads-up to the affected sponsor.
+-- The bearer token here is the anon key (public, safe to embed) -- it only
+-- needs to pass the function gateway's JWT check; the function itself uses
+-- its own service role key internally for the privileged queries.
+select cron.schedule(
+  'notify-overdue-assignments',
+  '0 13 * * *',
+  $$
+  select net.http_post(
+    url := '<YOUR_PROJECT_URL>/functions/v1/notify-overdue',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer <YOUR_ANON_KEY>'
+    ),
+    body := '{}'::jsonb
+  );
+  $$
+);

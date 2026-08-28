@@ -67,6 +67,7 @@ Deno.serve(async (req: Request) => {
       sound: "default",
       title: `${sponsee.name} checked in`,
       body: worksheet_title ? `Completed: ${worksheet_title}` : "Marked a worksheet complete",
+      data: { sponseeId: sponsee_id },
     };
 
     const pushResponse = await fetch("https://exp.host/--/api/v2/push/send", {

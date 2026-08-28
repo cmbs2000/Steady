@@ -5,6 +5,19 @@ import { Platform } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
 
+// Without a handler registered, expo-notifications' documented default is to
+// NOT show a notification at all while the app is in the foreground — it
+// isn't just quieter, it's fully suppressed. Register this at module load so
+// it's in place before any notification could arrive.
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
 // Best-effort: registers this device for push notifications and saves the
 // token on the signed-in sponsor's row. Silently no-ops on simulators, web,
 // or if permission is denied — a sponsor who skips this just won't get

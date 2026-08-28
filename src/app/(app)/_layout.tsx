@@ -1,5 +1,6 @@
-import { Redirect, Stack } from 'expo-router';
-import { useEffect } from 'react';
+import { Redirect, Stack, useRouter } from 'expo-router';
+import * as Notifications from 'expo-notifications';
+import { useEffect, useRef } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
 import { useAuth } from '@/auth/AuthProvider';
@@ -8,12 +9,30 @@ import { colors } from '@/theme';
 
 export default function AppLayout() {
   const { session, loading } = useAuth();
+  const router = useRouter();
+  const lastNotificationResponse = Notifications.useLastNotificationResponse();
+  const handledNotificationId = useRef<string | null>(null);
 
   useEffect(() => {
     if (session) {
       registerForPushNotifications().catch((err) => console.error('Push registration failed:', err));
     }
   }, [session]);
+
+  // router isn't a dependency here on purpose — useRouter() doesn't
+  // guarantee a stable reference, and including it caused an infinite
+  // render loop (effect fires -> router.push -> re-render -> new router
+  // identity -> effect fires again). The ref guard also stops the same
+  // response from re-triggering navigation on unrelated re-renders.
+  useEffect(() => {
+    const notificationId = lastNotificationResponse?.notification.request.identifier;
+    const sponseeId = lastNotificationResponse?.notification.request.content.data?.sponseeId;
+    if (typeof sponseeId === 'string' && notificationId && handledNotificationId.current !== notificationId) {
+      handledNotificationId.current = notificationId;
+      router.push(`/sponsee/${sponseeId}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastNotificationResponse]);
 
   if (loading) {
     return (
