@@ -24,7 +24,14 @@ export default function AppLayout() {
   // render loop (effect fires -> router.push -> re-render -> new router
   // identity -> effect fires again). The ref guard also stops the same
   // response from re-triggering navigation on unrelated re-renders.
+  //
+  // Also wait for loading/session to settle before navigating: on a cold
+  // start via notification tap, this effect ran before the Stack below had
+  // even mounted (the component was still returning the loading spinner),
+  // and pushing into a not-yet-mounted navigator was the real cause of the
+  // infinite-loop crash — it only ever happened from a fully-closed app.
   useEffect(() => {
+    if (loading || !session) return;
     const notificationId = lastNotificationResponse?.notification.request.identifier;
     const sponseeId = lastNotificationResponse?.notification.request.content.data?.sponseeId;
     if (typeof sponseeId === 'string' && notificationId && handledNotificationId.current !== notificationId) {
@@ -32,7 +39,7 @@ export default function AppLayout() {
       router.push(`/sponsee/${sponseeId}`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lastNotificationResponse]);
+  }, [lastNotificationResponse, loading, session]);
 
   if (loading) {
     return (
