@@ -18,8 +18,9 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
-# Firebase credentials
-google-services.json
+# Firebase Admin SDK service account key — a real server-side secret, unlike
+# google-services.json (which is a public client config, safe and expected
+# to be committed so EAS Build's git-based archive includes it).
 *firebase-adminsdk*.json
 
 # Metro

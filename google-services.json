@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "443097225809",
+    "project_id": "steady-d546c",
+    "storage_bucket": "steady-d546c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:443097225809:android:76a6509e973165cb09f670",
+        "android_client_info": {
+          "package_name": "com.combscomps.steady"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDwaUXUGi0BLwKgyPQYES-7v0SzbRnm1Xc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
