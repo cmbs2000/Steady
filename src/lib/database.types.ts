@@ -51,6 +51,42 @@ export type Database = {
           },
         ];
       };
+      recurring_assignments: {
+        Row: {
+          created_at: string;
+          id: string;
+          sponsee_id: string;
+          worksheet_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          sponsee_id: string;
+          worksheet_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          sponsee_id?: string;
+          worksheet_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'recurring_assignments_sponsee_id_fkey';
+            columns: ['sponsee_id'];
+            isOneToOne: false;
+            referencedRelation: 'sponsees';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'recurring_assignments_worksheet_id_fkey';
+            columns: ['worksheet_id'];
+            isOneToOne: false;
+            referencedRelation: 'worksheets';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       sponsees: {
         Row: {
           created_at: string;
@@ -58,6 +94,7 @@ export type Database = {
           id: string;
           last_activity_date: string | null;
           name: string;
+          notes: string | null;
           phone: string | null;
           sponsor_id: string;
           streak_days: number;
@@ -68,6 +105,7 @@ export type Database = {
           id?: string;
           last_activity_date?: string | null;
           name: string;
+          notes?: string | null;
           phone?: string | null;
           sponsor_id: string;
           streak_days?: number;
@@ -78,6 +116,7 @@ export type Database = {
           id?: string;
           last_activity_date?: string | null;
           name?: string;
+          notes?: string | null;
           phone?: string | null;
           sponsor_id?: string;
           streak_days?: number;

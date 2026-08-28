@@ -13,6 +13,7 @@ export interface DbSponsee {
 }
 
 export interface DbSponseeDetail extends Omit<DbSponsee, 'assignments'> {
+  notes: string | null;
   assignments: {
     id: string;
     status: 'pending' | 'done' | 'overdue';
@@ -59,7 +60,7 @@ export function useSponsee(id: string | undefined) {
     const { data, error } = await supabase
       .from('sponsees')
       .select(
-        'id, name, phone, current_step, streak_days, assignments(id, status, due_date, worksheet:worksheets(id, title, step))'
+        'id, name, phone, notes, current_step, streak_days, assignments(id, status, due_date, worksheet:worksheets(id, title, step))'
       )
       .eq('id', id)
       .maybeSingle();
@@ -98,6 +99,7 @@ export interface SponseeInput {
   name: string;
   phone: string | null;
   current_step: string;
+  notes?: string | null;
 }
 
 export async function updateSponsee(id: string, input: SponseeInput) {

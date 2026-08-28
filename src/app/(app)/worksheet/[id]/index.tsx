@@ -6,6 +6,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { addRecurringAssignment, removeRecurringAssignment, useRecurringAssignments } from '@/data/recurringAssignments';
 import { useSelection } from '@/data/selection';
 import { useSponsees } from '@/data/sponsees';
 import { assignWorksheet, useWorksheet } from '@/data/worksheets';
@@ -51,16 +52,20 @@ export default function WorksheetDetailScreen() {
   const { worksheet, loading, error, refetch } = useWorksheet(id);
   const { sponsees, refetch: refetchSponsees } = useSponsees();
   const { selectedSponseeId } = useSelection();
+  const { recurring, refetch: refetchRecurring } = useRecurringAssignments(selectedSponseeId ?? undefined);
   const [assigning, setAssigning] = useState(false);
+  const [togglingRecurring, setTogglingRecurring] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       refetch();
       refetchSponsees();
-    }, [refetch, refetchSponsees])
+      refetchRecurring();
+    }, [refetch, refetchSponsees, refetchRecurring])
   );
 
   const selectedSponsee = sponsees.find((s) => s.id === selectedSponseeId);
+  const recurringEntry = recurring.find((r) => r.worksheet_id === id);
 
   if (loading && !worksheet) {
     return (
@@ -88,6 +93,23 @@ export default function WorksheetDetailScreen() {
       setTimeout(() => setAssigning(false), 1600);
     } catch (err) {
       Alert.alert('Could not assign', err instanceof Error ? err.message : 'Please try again.');
+    }
+  };
+
+  const handleToggleRecurring = async () => {
+    if (!selectedSponsee) return;
+    setTogglingRecurring(true);
+    try {
+      if (recurringEntry) {
+        await removeRecurringAssignment(recurringEntry.id);
+      } else {
+        await addRecurringAssignment(selectedSponsee.id, worksheet.id);
+      }
+      refetchRecurring();
+    } catch (err) {
+      Alert.alert('Could not update', err instanceof Error ? err.message : 'Please try again.');
+    } finally {
+      setTogglingRecurring(false);
     }
   };
 
@@ -158,6 +180,22 @@ export default function WorksheetDetailScreen() {
             <Text style={styles.primaryButtonText}>{assigning ? 'Assigned!' : 'Assign'}</Text>
           </Pressable>
         </View>
+
+        {worksheet.step === 'Daily' && selectedSponsee && (
+          <Pressable
+            style={[styles.recurringButton, recurringEntry && styles.recurringButtonActive]}
+            onPress={handleToggleRecurring}
+            disabled={togglingRecurring}>
+            <Ionicons
+              name={recurringEntry ? 'checkmark-circle' : 'repeat'}
+              size={16}
+              color={recurringEntry ? colors.done : colors.primary}
+            />
+            <Text style={[styles.recurringButtonText, recurringEntry && styles.recurringButtonTextActive]}>
+              {recurringEntry ? 'Repeating daily — tap to stop' : `Repeat daily for ${selectedSponsee.name}`}
+            </Text>
+          </Pressable>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -224,4 +262,17 @@ const styles = StyleSheet.create({
   },
   primaryButtonDisabled: { opacity: 0.5 },
   primaryButtonText: { color: colors.surface, fontSize: 13, fontWeight: '700' },
+  recurringButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingVertical: 10,
+  },
+  recurringButtonActive: { backgroundColor: colors.doneLight, borderColor: colors.done },
+  recurringButtonText: { fontSize: 12, fontWeight: '700', color: colors.primary },
+  recurringButtonTextActive: { color: colors.done },
 });

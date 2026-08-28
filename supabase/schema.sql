@@ -54,6 +54,7 @@ create table public.sponsees (
   sponsor_id uuid not null references public.sponsors (id) on delete cascade,
   name text not null,
   phone text,
+  notes text,
   current_step text not null default 'Step 1',
   streak_days integer not null default 0,
   last_activity_date date,
@@ -259,3 +260,75 @@ revoke execute on function public.checkin_get_sponsee(uuid) from public;
 revoke execute on function public.checkin_set_assignment_status(uuid, uuid, text) from public;
 grant execute on function public.checkin_get_sponsee(uuid) to anon, authenticated;
 grant execute on function public.checkin_set_assignment_status(uuid, uuid, text) to anon, authenticated;
+
+-- ─── recurring assignments ───────────────────────────────────────────────
+-- A sponsor/worksheet pairing that should get a fresh assignment every day
+-- (e.g. "Daily Gratitude Check-In"), rather than being assigned once.
+create table public.recurring_assignments (
+  id uuid primary key default gen_random_uuid(),
+  sponsee_id uuid not null references public.sponsees (id) on delete cascade,
+  worksheet_id uuid not null references public.worksheets (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (sponsee_id, worksheet_id)
+);
+
+create index recurring_assignments_sponsee_id_idx on public.recurring_assignments (sponsee_id);
+
+alter table public.recurring_assignments enable row level security;
+
+create policy "Sponsors can view recurring assignments for their own sponsees"
+  on public.recurring_assignments for select
+  using (
+    exists (
+      select 1 from public.sponsees
+      where sponsees.id = recurring_assignments.sponsee_id
+        and sponsees.sponsor_id = auth.uid()
+    )
+  );
+
+create policy "Sponsors can create recurring assignments for their own sponsees"
+  on public.recurring_assignments for insert
+  with check (
+    exists (
+      select 1 from public.sponsees
+      where sponsees.id = recurring_assignments.sponsee_id
+        and sponsees.sponsor_id = auth.uid()
+    )
+  );
+
+create policy "Sponsors can delete recurring assignments for their own sponsees"
+  on public.recurring_assignments for delete
+  using (
+    exists (
+      select 1 from public.sponsees
+      where sponsees.id = recurring_assignments.sponsee_id
+        and sponsees.sponsor_id = auth.uid()
+    )
+  );
+
+-- Daily cron job: for every active recurring pairing, create today's
+-- assignment if one doesn't already exist (covers both the cron having
+-- already run today and a sponsor having manually assigned it today too).
+create function public.create_recurring_assignments()
+returns void
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  insert into public.assignments (sponsee_id, worksheet_id, due_date)
+  select r.sponsee_id, r.worksheet_id, current_date
+  from public.recurring_assignments r
+  where not exists (
+    select 1 from public.assignments a
+    where a.sponsee_id = r.sponsee_id
+      and a.worksheet_id = r.worksheet_id
+      and a.assigned_date = current_date
+  );
+end;
+$$;
+
+revoke execute on function public.create_recurring_assignments() from public, anon, authenticated;
+
+create extension if not exists pg_cron;
+
+select cron.schedule('create-recurring-assignments', '5 0 * * *', $$select public.create_recurring_assignments();$$);

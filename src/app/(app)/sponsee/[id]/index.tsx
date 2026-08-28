@@ -7,6 +7,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { removeRecurringAssignment, useRecurringAssignments } from '@/data/recurringAssignments';
 import { useSelection } from '@/data/selection';
 import { useSponsee } from '@/data/sponsees';
 import { unassignWorksheet, updateAssignmentDueDate } from '@/data/worksheets';
@@ -18,6 +19,7 @@ export default function SponseeDetailScreen() {
   const router = useRouter();
   const { setSelectedSponseeId } = useSelection();
   const { sponsee, loading, error, refetch } = useSponsee(id);
+  const { recurring, refetch: refetchRecurring } = useRecurringAssignments(id);
   const [copied, setCopied] = useState(false);
   const [sendingText, setSendingText] = useState(false);
   const [editingDueDateFor, setEditingDueDateFor] = useState<string | null>(null);
@@ -25,7 +27,8 @@ export default function SponseeDetailScreen() {
   useFocusEffect(
     useCallback(() => {
       refetch();
-    }, [refetch])
+      refetchRecurring();
+    }, [refetch, refetchRecurring])
   );
 
   if (loading && !sponsee) {
@@ -145,6 +148,13 @@ export default function SponseeDetailScreen() {
           </View>
         </View>
 
+        {sponsee.notes && (
+          <View style={styles.notesCard}>
+            <Text style={styles.notesLabel}>Private Notes</Text>
+            <Text style={styles.notesText}>{sponsee.notes}</Text>
+          </View>
+        )}
+
         <Pressable style={styles.linkCard} onPress={copyLink}>
           <Ionicons name="link" size={16} color={colors.primary} />
           <Text style={styles.linkText} numberOfLines={1}>
@@ -160,6 +170,30 @@ export default function SponseeDetailScreen() {
           </Pressable>
         ) : (
           <Text style={styles.noPhoneHint}>Add a phone number to this sponsee to text them the link.</Text>
+        )}
+
+        {recurring.length > 0 && (
+          <View style={styles.recurringSection}>
+            <Text style={styles.sectionTitle}>Repeating Daily</Text>
+            {recurring.map((r) => (
+              <View key={r.id} style={styles.recurringRow}>
+                <Ionicons name="repeat" size={15} color={colors.primary} />
+                <Text style={styles.recurringRowText}>{r.worksheet?.title ?? 'Worksheet'}</Text>
+                <Pressable
+                  onPress={async () => {
+                    try {
+                      await removeRecurringAssignment(r.id);
+                      refetchRecurring();
+                    } catch (err) {
+                      Alert.alert('Could not stop', err instanceof Error ? err.message : 'Please try again.');
+                    }
+                  }}
+                  hitSlop={8}>
+                  <Text style={styles.recurringStopText}>Stop</Text>
+                </Pressable>
+              </View>
+            ))}
+          </View>
         )}
 
         <Text style={styles.sectionTitle}>Assigned Worksheets</Text>
@@ -235,6 +269,14 @@ const styles = StyleSheet.create({
   summaryRow: { flexDirection: 'row', gap: 18, marginTop: 12 },
   summaryItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   summaryText: { fontSize: 13, fontWeight: '500', color: colors.text },
+  notesCard: {
+    backgroundColor: colors.pendingLight,
+    borderRadius: 14,
+    padding: 14,
+    gap: 4,
+  },
+  notesLabel: { fontSize: 11, fontWeight: '700', color: colors.pending, textTransform: 'uppercase' },
+  notesText: { fontSize: 14, color: colors.text, lineHeight: 20 },
   linkCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -258,6 +300,20 @@ const styles = StyleSheet.create({
   textButtonText: { color: colors.surface, fontSize: 13, fontWeight: '700' },
   noPhoneHint: { fontSize: 12, color: colors.textSecondary, textAlign: 'center' },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
+  recurringSection: { gap: 8 },
+  recurringRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  recurringRowText: { flex: 1, fontSize: 14, color: colors.text, fontWeight: '500' },
+  recurringStopText: { fontSize: 13, fontWeight: '700', color: colors.overdue },
   emptyText: { color: colors.textSecondary, fontSize: 14, padding: 16, textAlign: 'center' },
   worksheetRow: {
     flexDirection: 'row',

@@ -16,6 +16,7 @@ export default function EditSponseeScreen() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [currentStep, setCurrentStep] = useState('Step 1');
+  const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,6 +29,7 @@ export default function EditSponseeScreen() {
       setName(sponsee.name);
       setPhone(sponsee.phone ?? '');
       setCurrentStep(sponsee.current_step);
+      setNotes(sponsee.notes ?? '');
     }
   }, [sponsee]);
 
@@ -48,7 +50,12 @@ export default function EditSponseeScreen() {
     setError(null);
     setSubmitting(true);
     try {
-      await updateSponsee(id, { name: trimmedName, phone: phone.trim() || null, current_step: currentStep });
+      await updateSponsee(id, {
+        name: trimmedName,
+        phone: phone.trim() || null,
+        current_step: currentStep,
+        notes: notes.trim() || null,
+      });
       router.back();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save changes. Please try again.');
@@ -124,6 +131,19 @@ export default function EditSponseeScreen() {
           </View>
         </View>
 
+        <View style={styles.field}>
+          <Text style={styles.label}>Private Notes (only you see this)</Text>
+          <TextInput
+            value={notes}
+            onChangeText={setNotes}
+            placeholder="Anything you want to remember between check-ins"
+            placeholderTextColor={colors.textSecondary}
+            style={[styles.input, styles.notesInput]}
+            multiline
+            editable={!submitting}
+          />
+        </View>
+
         {error && <Text style={styles.error}>{error}</Text>}
 
         <Pressable
@@ -157,6 +177,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.text,
   },
+  notesInput: { minHeight: 90, textAlignVertical: 'top' },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     paddingHorizontal: 12,
