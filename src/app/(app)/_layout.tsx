@@ -11,7 +11,7 @@ export default function AppLayout() {
 
   useEffect(() => {
     if (session) {
-      registerForPushNotifications().catch(() => {});
+      registerForPushNotifications().catch((err) => console.error('Push registration failed:', err));
     }
   }, [session]);
 
