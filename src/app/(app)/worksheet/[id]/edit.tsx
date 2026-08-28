@@ -1,14 +1,16 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { WorksheetForm } from '@/components/WorksheetForm';
 import type { WorksheetInput } from '@/data/worksheets';
 import { countAssignmentsForWorksheet, deleteWorksheet, updateWorksheet, useWorksheet } from '@/data/worksheets';
-import { colors } from '@/theme';
+import { type ThemeColors, useThemeColors } from '@/theme';
 
 export default function EditWorksheetScreen() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { worksheet, loading, refetch } = useWorksheet(id);
@@ -99,7 +101,7 @@ export default function EditWorksheetScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyText: { color: colors.textSecondary, fontSize: 14 },

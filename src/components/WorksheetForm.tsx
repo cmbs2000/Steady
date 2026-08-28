@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import type { WorksheetInput } from '@/data/worksheets';
 import { STEP_OPTIONS, WORKSHEET_TYPE_OPTIONS } from '@/data/worksheets';
-import { colors } from '@/theme';
+import { type ThemeColors, useThemeColors } from '@/theme';
 
 interface WorksheetFormProps {
   initial?: WorksheetInput;
@@ -14,6 +14,8 @@ interface WorksheetFormProps {
 }
 
 export function WorksheetForm({ initial, submitting, submitLabel, onSubmit }: WorksheetFormProps) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [title, setTitle] = useState(initial?.title ?? '');
   const [step, setStep] = useState(initial?.step ?? STEP_OPTIONS[0]);
   const [type, setType] = useState<string>(initial?.type ?? 'worksheet');
@@ -127,7 +129,7 @@ export function WorksheetForm({ initial, submitting, submitLabel, onSubmit }: Wo
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   content: { padding: 20, gap: 14 },
   field: { gap: 6 },
   label: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },

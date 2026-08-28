@@ -1,16 +1,18 @@
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { deleteSponsee, updateSponsee, useSponsee } from '@/data/sponsees';
+import { archiveSponsee, updateSponsee, useSponsee } from '@/data/sponsees';
 import { daysSober, sobrietyMilestoneLabel } from '@/lib/sobriety';
-import { colors } from '@/theme';
+import { type ThemeColors, useThemeColors } from '@/theme';
 
 const STEP_OPTIONS = Array.from({ length: 12 }, (_, i) => `Step ${i + 1}`);
 
 export default function EditSponseeScreen() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { sponsee, loading: loadingSponsee, refetch } = useSponsee(id);
@@ -75,25 +77,29 @@ export default function EditSponseeScreen() {
     }
   };
 
-  const handleDelete = () => {
+  const handleArchive = () => {
     if (!id) return;
-    Alert.alert('Remove sponsee?', `This deletes ${sponsee?.name ?? 'this sponsee'} and all of their assignments. This can't be undone.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: async () => {
-          setSubmitting(true);
-          try {
-            await deleteSponsee(id);
-            router.replace('/');
-          } catch (err) {
-            setSubmitting(false);
-            Alert.alert('Could not remove sponsee', err instanceof Error ? err.message : 'Please try again.');
-          }
+    Alert.alert(
+      'Archive sponsee?',
+      `${sponsee?.name ?? 'This sponsee'} will be hidden from your dashboard. You can restore them anytime from Archived Sponsees.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Archive',
+          style: 'destructive',
+          onPress: async () => {
+            setSubmitting(true);
+            try {
+              await archiveSponsee(id);
+              router.replace('/');
+            } catch (err) {
+              setSubmitting(false);
+              Alert.alert('Could not archive sponsee', err instanceof Error ? err.message : 'Please try again.');
+            }
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   return (
@@ -184,15 +190,15 @@ export default function EditSponseeScreen() {
           {submitting ? <ActivityIndicator color={colors.surface} /> : <Text style={styles.buttonText}>Save Changes</Text>}
         </Pressable>
 
-        <Pressable style={styles.deleteButton} onPress={handleDelete} disabled={submitting}>
-          <Text style={styles.deleteButtonText}>Remove Sponsee</Text>
+        <Pressable style={styles.deleteButton} onPress={handleArchive} disabled={submitting}>
+          <Text style={styles.deleteButtonText}>Archive Sponsee</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 20, gap: 14 },

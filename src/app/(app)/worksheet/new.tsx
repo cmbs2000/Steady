@@ -1,14 +1,16 @@
 import { Stack, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { WorksheetForm } from '@/components/WorksheetForm';
 import type { WorksheetInput } from '@/data/worksheets';
 import { createWorksheet } from '@/data/worksheets';
-import { colors } from '@/theme';
+import { type ThemeColors, useThemeColors } from '@/theme';
 
 export default function NewWorksheetScreen() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
 
@@ -33,6 +35,6 @@ export default function NewWorksheetScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
 });

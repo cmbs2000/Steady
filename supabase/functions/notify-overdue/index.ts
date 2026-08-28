@@ -17,9 +17,10 @@ Deno.serve(async (_req: Request) => {
 
   const { data: overdue, error } = await supabase
     .from("assignments")
-    .select("id, sponsee:sponsees(id, name, sponsor_id), worksheet:worksheets(title)")
+    .select("id, sponsee:sponsees!inner(id, name, sponsor_id, archived_at), worksheet:worksheets(title)")
     .eq("status", "pending")
     .is("overdue_notified_at", null)
+    .is("sponsee.archived_at", null)
     .lt("due_date", today);
 
   if (error || !overdue || overdue.length === 0) {

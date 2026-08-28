@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { DbSponsee } from '@/data/sponsees';
 import { useSponsees } from '@/data/sponsees';
 import { daysSober, sobrietyMilestoneLabel } from '@/lib/sobriety';
-import { colors } from '@/theme';
+import { type ThemeColors, useThemeColors } from '@/theme';
 
 type SortBy = 'name' | 'streak' | 'overdue';
 
@@ -18,6 +18,8 @@ const SORT_OPTIONS: { key: SortBy; label: string }[] = [
 ];
 
 export default function DashboardScreen() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const { sponsees, loading, error, refetch } = useSponsees();
   const [query, setQuery] = useState('');
@@ -98,9 +100,14 @@ export default function DashboardScreen() {
           <Text style={styles.title}>Your Sponsees</Text>
           <Text style={styles.subtitle}>{loading ? 'Loading…' : `${sponsees.length} active`}</Text>
         </View>
-        <Pressable style={styles.addButton} onPress={() => router.push('/add-sponsee')} hitSlop={8}>
-          <Ionicons name="add" size={22} color={colors.surface} />
-        </Pressable>
+        <View style={styles.headerActions}>
+          <Pressable style={styles.iconButton} onPress={() => router.push('/archived-sponsees')} hitSlop={8}>
+            <Ionicons name="archive-outline" size={20} color={colors.textSecondary} />
+          </Pressable>
+          <Pressable style={styles.addButton} onPress={() => router.push('/add-sponsee')} hitSlop={8}>
+            <Ionicons name="add" size={22} color={colors.surface} />
+          </Pressable>
+        </View>
       </View>
 
       {sponsees.length > 0 && (
@@ -167,7 +174,7 @@ export default function DashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: {
     flexDirection: 'row',
@@ -179,6 +186,15 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 28, fontWeight: '700', color: colors.text },
   subtitle: { fontSize: 14, color: colors.textSecondary, marginTop: 2 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  iconButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.chipInactive,
+  },
   addButton: {
     width: 34,
     height: 34,

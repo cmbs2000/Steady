@@ -10,6 +10,7 @@ export interface DbSponsee {
   sobriety_date: string | null;
   current_step: string;
   streak_days: number;
+  archived_at: string | null;
   assignments: { status: 'pending' | 'done' | 'overdue' }[];
 }
 
@@ -23,17 +24,20 @@ export interface DbSponseeDetail extends Omit<DbSponsee, 'assignments'> {
   }[];
 }
 
-export function useSponsees() {
+export function useSponsees(options: { archived?: boolean } = {}) {
+  const { archived = false } = options;
   const [sponsees, setSponsees] = useState<DbSponsee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const refetch = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from('sponsees')
-      .select('id, name, phone, sobriety_date, current_step, streak_days, assignments(status, due_date)')
+      .select('id, name, phone, sobriety_date, current_step, streak_days, archived_at, assignments(status, due_date)')
       .order('name');
+    query = archived ? query.not('archived_at', 'is', null) : query.is('archived_at', null);
+    const { data, error } = await query;
 
     if (error) setError(error.message);
     else {
@@ -45,7 +49,7 @@ export function useSponsees() {
       setSponsees(withEffectiveStatus as DbSponsee[]);
     }
     setLoading(false);
-  }, []);
+  }, [archived]);
 
   return { sponsees, loading, error, refetch };
 }
@@ -61,7 +65,7 @@ export function useSponsee(id: string | undefined) {
     const { data, error } = await supabase
       .from('sponsees')
       .select(
-        'id, name, phone, notes, sobriety_date, current_step, streak_days, assignments(id, status, due_date, worksheet:worksheets(id, title, step))'
+        'id, name, phone, notes, sobriety_date, current_step, streak_days, archived_at, assignments(id, status, due_date, worksheet:worksheets(id, title, step))'
       )
       .eq('id', id)
       .maybeSingle();
@@ -121,5 +125,15 @@ export async function updateSponsee(id: string, input: SponseeInput) {
 
 export async function deleteSponsee(id: string) {
   const { error } = await supabase.from('sponsees').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function archiveSponsee(id: string) {
+  const { error } = await supabase.from('sponsees').update({ archived_at: new Date().toISOString() }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function restoreSponsee(id: string) {
+  const { error } = await supabase.from('sponsees').update({ archived_at: null }).eq('id', id);
   if (error) throw error;
 }

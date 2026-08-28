@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,7 +10,7 @@ import { addRecurringAssignment, removeRecurringAssignment, useRecurringAssignme
 import { useSelection } from '@/data/selection';
 import { useSponsees } from '@/data/sponsees';
 import { assignWorksheet, useWorksheet } from '@/data/worksheets';
-import { colors } from '@/theme';
+import { type ThemeColors, useThemeColors } from '@/theme';
 
 function buildWorksheetHtml(title: string, purpose: string, prompts: string[]) {
   const promptItems = prompts
@@ -47,6 +47,8 @@ function buildWorksheetHtml(title: string, purpose: string, prompts: string[]) {
 }
 
 export default function WorksheetDetailScreen() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { worksheet, loading, error, refetch } = useWorksheet(id);
@@ -201,7 +203,7 @@ export default function WorksheetDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scrollContent: { padding: 20, paddingBottom: 12, gap: 4 },

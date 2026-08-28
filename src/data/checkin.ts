@@ -16,6 +16,8 @@ export interface CheckinAssignment {
 
 export interface CheckinData {
   name: string;
+  streakDays: number;
+  sobrietyDate: string | null;
   assignments: CheckinAssignment[];
 }
 
@@ -38,6 +40,8 @@ export function useCheckin(sponseeId: string | undefined) {
       setError(null);
       setData({
         name: rows[0].name,
+        streakDays: rows[0].streak_days ?? 0,
+        sobrietyDate: rows[0].sobriety_date ?? null,
         assignments: rows
           .filter((r) => r.assignment_id)
           .map((r) => ({

@@ -3,7 +3,7 @@ import DateTimePicker, { type DateTimePickerEvent } from '@react-native-communit
 import * as Clipboard from 'expo-clipboard';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as SMS from 'expo-sms';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -13,9 +13,12 @@ import { useSponsee } from '@/data/sponsees';
 import { unassignWorksheet, updateAssignmentDueDate } from '@/data/worksheets';
 import { getCheckinLink } from '@/lib/links';
 import { daysSober, sobrietyMilestoneLabel } from '@/lib/sobriety';
-import { colors, statusStyles } from '@/theme';
+import { type ThemeColors, useStatusStyles, useThemeColors } from '@/theme';
 
 export default function SponseeDetailScreen() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const statusStyles = useStatusStyles(colors);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { setSelectedSponseeId } = useSelection();
@@ -263,7 +266,7 @@ export default function SponseeDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   scrollContent: { padding: 16, paddingBottom: 12, gap: 16 },

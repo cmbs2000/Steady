@@ -89,6 +89,7 @@ export type Database = {
       };
       sponsees: {
         Row: {
+          archived_at: string | null;
           created_at: string;
           current_step: string;
           id: string;
@@ -101,6 +102,7 @@ export type Database = {
           streak_days: number;
         };
         Insert: {
+          archived_at?: string | null;
           created_at?: string;
           current_step?: string;
           id?: string;
@@ -113,6 +115,7 @@ export type Database = {
           streak_days?: number;
         };
         Update: {
+          archived_at?: string | null;
           created_at?: string;
           current_step?: string;
           id?: string;
@@ -197,6 +200,8 @@ export type Database = {
           due_date: string;
           id: string;
           name: string;
+          sobriety_date: string | null;
+          streak_days: number;
           status: string;
           worksheet_id: string;
           worksheet_step: string;

@@ -59,10 +59,12 @@ create table public.sponsees (
   current_step text not null default 'Step 1',
   streak_days integer not null default 0,
   last_activity_date date,
+  archived_at timestamptz,
   created_at timestamptz not null default now()
 );
 
 create index sponsees_sponsor_id_idx on public.sponsees (sponsor_id);
+create index sponsees_sponsor_id_active_idx on public.sponsees (sponsor_id) where archived_at is null;
 
 alter table public.sponsees enable row level security;
 
@@ -200,6 +202,8 @@ create function public.checkin_get_sponsee(p_sponsee_id uuid)
 returns table (
   id uuid,
   name text,
+  streak_days integer,
+  sobriety_date date,
   assignment_id uuid,
   status text,
   due_date date,
@@ -214,7 +218,7 @@ security definer set search_path = public
 as $$
 begin
   return query
-    select s.id, s.name, a.id, a.status, a.due_date, w.id, w.title, w.step, w.purpose, w.prompts
+    select s.id, s.name, s.streak_days, s.sobriety_date, a.id, a.status, a.due_date, w.id, w.title, w.step, w.purpose, w.prompts
     from public.sponsees s
     left join public.assignments a on a.sponsee_id = s.id
     left join public.worksheets w on w.id = a.worksheet_id
@@ -320,12 +324,14 @@ begin
   insert into public.assignments (sponsee_id, worksheet_id, due_date)
   select r.sponsee_id, r.worksheet_id, current_date
   from public.recurring_assignments r
-  where not exists (
-    select 1 from public.assignments a
-    where a.sponsee_id = r.sponsee_id
-      and a.worksheet_id = r.worksheet_id
-      and a.assigned_date = current_date
-  );
+  join public.sponsees s on s.id = r.sponsee_id
+  where s.archived_at is null
+    and not exists (
+      select 1 from public.assignments a
+      where a.sponsee_id = r.sponsee_id
+        and a.worksheet_id = r.worksheet_id
+        and a.assigned_date = current_date
+    );
 end;
 $$;
 

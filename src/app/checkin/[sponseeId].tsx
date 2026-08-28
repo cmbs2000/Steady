@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { setCheckinAssignmentStatus, useCheckin } from '@/data/checkin';
-import { colors, statusStyles } from '@/theme';
+import { daysSober, sobrietyMilestoneLabel } from '@/lib/sobriety';
+import { type ThemeColors, useStatusStyles, useThemeColors } from '@/theme';
 
 // Sponsee-facing check-in page. Reached only via a magic link sent by the
 // sponsor — never linked from the native app's tab navigation, and requires
@@ -13,6 +14,9 @@ import { colors, statusStyles } from '@/theme';
 // checkin_get_sponsee / checkin_set_assignment_status RPCs, since sponsees
 // have no auth session for RLS to key off of.
 export default function SponseeCheckinScreen() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const statusStyles = useStatusStyles(colors);
   const { sponseeId } = useLocalSearchParams<{ sponseeId: string }>();
   const { data, loading, error, refetch } = useCheckin(sponseeId);
 
@@ -75,6 +79,19 @@ export default function SponseeCheckinScreen() {
               {doneCount}/{data.assignments.length} complete
             </Text>
           </View>
+
+          <View style={styles.statsRow}>
+            <View style={styles.statChip}>
+              <Ionicons name="flame" size={14} color={colors.pending} />
+              <Text style={styles.statChipText}>{data.streakDays} day streak</Text>
+            </View>
+            {data.sobrietyDate && (
+              <View style={styles.statChip}>
+                <Ionicons name="ribbon" size={14} color={colors.primary} />
+                <Text style={styles.statChipText}>{sobrietyMilestoneLabel(daysSober(data.sobrietyDate))} sober</Text>
+              </View>
+            )}
+          </View>
         </View>
 
         <View style={styles.list}>
@@ -125,7 +142,7 @@ export default function SponseeCheckinScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   notFound: { fontSize: 16, color: colors.textSecondary, textAlign: 'center' },
@@ -145,6 +162,17 @@ const styles = StyleSheet.create({
   progressBarTrack: { flex: 1, height: 8, borderRadius: 4, backgroundColor: colors.chipInactive, overflow: 'hidden' },
   progressBarFill: { height: 8, borderRadius: 4, backgroundColor: colors.done },
   progressText: { fontSize: 12, fontWeight: '700', color: colors.textSecondary },
+  statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  statChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: colors.chipInactive,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  statChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
   list: { gap: 10 },
   emptyText: { textAlign: 'center', color: colors.textSecondary, padding: 20 },
   item: {

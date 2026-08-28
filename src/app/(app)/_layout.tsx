@@ -5,9 +5,10 @@ import { ActivityIndicator, View } from 'react-native';
 
 import { useAuth } from '@/auth/AuthProvider';
 import { registerForPushNotifications } from '@/lib/pushNotifications';
-import { colors } from '@/theme';
+import { useThemeColors } from '@/theme';
 
 export default function AppLayout() {
+  const colors = useThemeColors();
   const { session, loading } = useAuth();
   const router = useRouter();
   const lastNotificationResponse = Notifications.useLastNotificationResponse();
@@ -68,6 +69,7 @@ export default function AppLayout() {
       <Stack.Screen name="worksheet/[id]/edit" options={{ title: 'Edit Worksheet', presentation: 'modal' }} />
       <Stack.Screen name="worksheet/new" options={{ title: 'New Worksheet', presentation: 'modal' }} />
       <Stack.Screen name="add-sponsee" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="archived-sponsees" options={{ presentation: 'modal' }} />
     </Stack>
   );
 }

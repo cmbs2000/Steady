@@ -8,11 +8,13 @@ import { useSelection } from '@/data/selection';
 import { useSponsees } from '@/data/sponsees';
 import type { DbWorksheet } from '@/data/worksheets';
 import { STEP_OPTIONS, useWorksheets } from '@/data/worksheets';
-import { colors } from '@/theme';
+import { type ThemeColors, useThemeColors } from '@/theme';
 
 const STEP_FILTERS = ['All', ...STEP_OPTIONS];
 
 export default function LibraryScreen() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const { worksheets, loading, error, refetch } = useWorksheets();
   const { sponsees, refetch: refetchSponsees } = useSponsees();
@@ -139,7 +141,7 @@ export default function LibraryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: {
     flexDirection: 'row',
