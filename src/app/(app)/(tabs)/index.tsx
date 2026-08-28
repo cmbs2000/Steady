@@ -1,24 +1,44 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useAuth } from '@/auth/AuthProvider';
 import type { DbSponsee } from '@/data/sponsees';
 import { useSponsees } from '@/data/sponsees';
 import { colors } from '@/theme';
 
+type SortBy = 'name' | 'streak' | 'overdue';
+
+const SORT_OPTIONS: { key: SortBy; label: string }[] = [
+  { key: 'name', label: 'Name' },
+  { key: 'streak', label: 'Streak' },
+  { key: 'overdue', label: 'Overdue' },
+];
+
 export default function DashboardScreen() {
   const router = useRouter();
-  const { signOut } = useAuth();
   const { sponsees, loading, error, refetch } = useSponsees();
+  const [query, setQuery] = useState('');
+  const [sortBy, setSortBy] = useState<SortBy>('name');
 
   useFocusEffect(
     useCallback(() => {
       refetch();
     }, [refetch])
   );
+
+  const visibleSponsees = useMemo(() => {
+    const filtered = sponsees.filter((s) => s.name.toLowerCase().includes(query.trim().toLowerCase()));
+
+    const overdueCountOf = (s: DbSponsee) => s.assignments.filter((a) => a.status === 'overdue').length;
+
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'streak') return b.streak_days - a.streak_days;
+      if (sortBy === 'overdue') return overdueCountOf(b) - overdueCountOf(a);
+      return a.name.localeCompare(b.name);
+    });
+  }, [sponsees, query, sortBy]);
 
   const renderItem = ({ item }: { item: DbSponsee }) => {
     const doneCount = item.assignments.filter((a) => a.status === 'done').length;
@@ -72,16 +92,40 @@ export default function DashboardScreen() {
           <Text style={styles.title}>Your Sponsees</Text>
           <Text style={styles.subtitle}>{loading ? 'Loading…' : `${sponsees.length} active`}</Text>
         </View>
-        <View style={styles.headerActions}>
-          <Pressable style={styles.addButton} onPress={() => router.push('/add-sponsee')} hitSlop={8}>
-            <Ionicons name="add" size={22} color={colors.surface} />
-          </Pressable>
-          <Pressable style={styles.signOutButton} onPress={signOut} hitSlop={8}>
-            <Ionicons name="log-out-outline" size={16} color={colors.textSecondary} />
-            <Text style={styles.signOutText}>Sign out</Text>
-          </Pressable>
-        </View>
+        <Pressable style={styles.addButton} onPress={() => router.push('/add-sponsee')} hitSlop={8}>
+          <Ionicons name="add" size={22} color={colors.surface} />
+        </Pressable>
       </View>
+
+      {sponsees.length > 0 && (
+        <>
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={16} color={colors.textSecondary} />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Search sponsees"
+              placeholderTextColor={colors.textSecondary}
+              style={styles.searchInput}
+            />
+          </View>
+
+          <View style={styles.sortRow}>
+            <Text style={styles.sortLabel}>Sort by</Text>
+            {SORT_OPTIONS.map((opt) => {
+              const active = opt.key === sortBy;
+              return (
+                <Pressable
+                  key={opt.key}
+                  style={[styles.sortChip, active && styles.sortChipActive]}
+                  onPress={() => setSortBy(opt.key)}>
+                  <Text style={[styles.sortChipText, active && styles.sortChipTextActive]}>{opt.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </>
+      )}
 
       {loading && sponsees.length === 0 ? (
         <View style={styles.centered}>
@@ -101,9 +145,13 @@ export default function DashboardScreen() {
             <Text style={styles.emptyCtaText}>Add a sponsee</Text>
           </Pressable>
         </View>
+      ) : visibleSponsees.length === 0 ? (
+        <View style={styles.centered}>
+          <Text style={styles.emptyText}>No sponsees match your search.</Text>
+        </View>
       ) : (
         <FlatList
-          data={sponsees}
+          data={visibleSponsees}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
@@ -125,7 +173,6 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 28, fontWeight: '700', color: colors.text },
   subtitle: { fontSize: 14, color: colors.textSecondary, marginTop: 2 },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   addButton: {
     width: 34,
     height: 34,
@@ -134,8 +181,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  signOutButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  signOutText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginBottom: 10,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  searchInput: { flex: 1, fontSize: 15, color: colors.text },
+  sortRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, marginBottom: 12 },
+  sortLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase' },
+  sortChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: colors.chipInactive,
+  },
+  sortChipActive: { backgroundColor: colors.primary },
+  sortChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+  sortChipTextActive: { color: colors.surface },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 32 },
   errorText: { color: colors.overdue, fontSize: 14, textAlign: 'center' },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 4 },
