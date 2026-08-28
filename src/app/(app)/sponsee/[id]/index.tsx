@@ -12,6 +12,7 @@ import { useSelection } from '@/data/selection';
 import { useSponsee } from '@/data/sponsees';
 import { unassignWorksheet, updateAssignmentDueDate } from '@/data/worksheets';
 import { getCheckinLink } from '@/lib/links';
+import { daysSober, sobrietyMilestoneLabel } from '@/lib/sobriety';
 import { colors, statusStyles } from '@/theme';
 
 export default function SponseeDetailScreen() {
@@ -134,6 +135,15 @@ export default function SponseeDetailScreen() {
         <View style={styles.summaryCard}>
           <Text style={styles.name}>{sponsee.name}</Text>
           <Text style={styles.step}>{sponsee.current_step}</Text>
+          {sponsee.sobriety_date && (
+            <View style={styles.sobrietyBadge}>
+              <Ionicons name="ribbon" size={16} color={colors.primary} />
+              <Text style={styles.sobrietyText}>
+                {sobrietyMilestoneLabel(daysSober(sponsee.sobriety_date))} sober ·{' '}
+                {daysSober(sponsee.sobriety_date)} days
+              </Text>
+            </View>
+          )}
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
               <Ionicons name="flame" size={16} color={colors.pending} />
@@ -266,6 +276,18 @@ const styles = StyleSheet.create({
   },
   name: { fontSize: 22, fontWeight: '700', color: colors.text },
   step: { fontSize: 14, color: colors.textSecondary, marginTop: 2 },
+  sobrietyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.primaryLight,
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginTop: 10,
+  },
+  sobrietyText: { fontSize: 13, fontWeight: '700', color: colors.primary },
   summaryRow: { flexDirection: 'row', gap: 18, marginTop: 12 },
   summaryItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   summaryText: { fontSize: 13, fontWeight: '500', color: colors.text },

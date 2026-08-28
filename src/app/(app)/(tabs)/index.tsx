@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { DbSponsee } from '@/data/sponsees';
 import { useSponsees } from '@/data/sponsees';
+import { daysSober, sobrietyMilestoneLabel } from '@/lib/sobriety';
 import { colors } from '@/theme';
 
 type SortBy = 'name' | 'streak' | 'overdue';
@@ -59,7 +60,12 @@ export default function DashboardScreen() {
 
         <View style={styles.cardBody}>
           <Text style={styles.name}>{item.name}</Text>
-          <Text style={styles.step}>{item.current_step}</Text>
+          <Text style={styles.step}>
+            {item.current_step}
+            {item.sobriety_date
+              ? ` · ${sobrietyMilestoneLabel(daysSober(item.sobriety_date))} sober`
+              : ''}
+          </Text>
 
           <View style={styles.metaRow}>
             <View style={styles.metaItem}>

@@ -1,9 +1,11 @@
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { deleteSponsee, updateSponsee, useSponsee } from '@/data/sponsees';
+import { daysSober, sobrietyMilestoneLabel } from '@/lib/sobriety';
 import { colors } from '@/theme';
 
 const STEP_OPTIONS = Array.from({ length: 12 }, (_, i) => `Step ${i + 1}`);
@@ -17,6 +19,8 @@ export default function EditSponseeScreen() {
   const [phone, setPhone] = useState('');
   const [currentStep, setCurrentStep] = useState('Step 1');
   const [notes, setNotes] = useState('');
+  const [sobrietyDate, setSobrietyDate] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,8 +34,14 @@ export default function EditSponseeScreen() {
       setPhone(sponsee.phone ?? '');
       setCurrentStep(sponsee.current_step);
       setNotes(sponsee.notes ?? '');
+      setSobrietyDate(sponsee.sobriety_date ? new Date(`${sponsee.sobriety_date}T00:00:00`) : null);
     }
   }, [sponsee]);
+
+  const handleDateChange = (event: DateTimePickerEvent, date?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (event.type === 'set' && date) setSobrietyDate(date);
+  };
 
   if (loadingSponsee && !sponsee) {
     return (
@@ -55,6 +65,7 @@ export default function EditSponseeScreen() {
         phone: phone.trim() || null,
         current_step: currentStep,
         notes: notes.trim() || null,
+        sobriety_date: sobrietyDate ? sobrietyDate.toISOString().slice(0, 10) : null,
       });
       router.back();
     } catch (err) {
@@ -132,6 +143,26 @@ export default function EditSponseeScreen() {
         </View>
 
         <View style={styles.field}>
+          <Text style={styles.label}>Sobriety Date</Text>
+          <Pressable style={styles.input} onPress={() => setShowDatePicker(true)} disabled={submitting}>
+            <Text style={sobrietyDate ? styles.dateText : styles.datePlaceholder}>
+              {sobrietyDate
+                ? `${sobrietyDate.toLocaleDateString()} · ${sobrietyMilestoneLabel(daysSober(sobrietyDate.toISOString().slice(0, 10)))}`
+                : 'Tap to set'}
+            </Text>
+          </Pressable>
+          {showDatePicker && (
+            <DateTimePicker
+              value={sobrietyDate ?? new Date()}
+              mode="date"
+              display="default"
+              maximumDate={new Date()}
+              onChange={handleDateChange}
+            />
+          )}
+        </View>
+
+        <View style={styles.field}>
           <Text style={styles.label}>Private Notes (only you see this)</Text>
           <TextInput
             value={notes}
@@ -178,6 +209,8 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   notesInput: { minHeight: 90, textAlignVertical: 'top' },
+  dateText: { fontSize: 15, color: colors.text },
+  datePlaceholder: { fontSize: 15, color: colors.textSecondary },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     paddingHorizontal: 12,

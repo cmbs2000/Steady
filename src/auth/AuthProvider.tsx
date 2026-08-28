@@ -9,6 +9,7 @@ interface AuthValue {
   sendCode: (email: string) => Promise<void>;
   verifyCode: (email: string, token: string) => Promise<void>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -45,6 +46,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signOut: async () => {
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
+      },
+      deleteAccount: async () => {
+        const { error } = await supabase.functions.invoke('delete-account');
+        if (error) throw error;
+        // The auth user is already gone server-side at this point; sign out
+        // locally too so the stale session/token doesn't linger on-device.
+        await supabase.auth.signOut();
       },
     }),
     [session, loading]

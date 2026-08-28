@@ -55,6 +55,7 @@ create table public.sponsees (
   name text not null,
   phone text,
   notes text,
+  sobriety_date date,
   current_step text not null default 'Step 1',
   streak_days integer not null default 0,
   last_activity_date date,

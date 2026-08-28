@@ -96,6 +96,7 @@ export type Database = {
           name: string;
           notes: string | null;
           phone: string | null;
+          sobriety_date: string | null;
           sponsor_id: string;
           streak_days: number;
         };
@@ -107,6 +108,7 @@ export type Database = {
           name: string;
           notes?: string | null;
           phone?: string | null;
+          sobriety_date?: string | null;
           sponsor_id: string;
           streak_days?: number;
         };
@@ -118,6 +120,7 @@ export type Database = {
           name?: string;
           notes?: string | null;
           phone?: string | null;
+          sobriety_date?: string | null;
           sponsor_id?: string;
           streak_days?: number;
         };

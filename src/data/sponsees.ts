@@ -7,6 +7,7 @@ export interface DbSponsee {
   id: string;
   name: string;
   phone: string | null;
+  sobriety_date: string | null;
   current_step: string;
   streak_days: number;
   assignments: { status: 'pending' | 'done' | 'overdue' }[];
@@ -31,7 +32,7 @@ export function useSponsees() {
     setLoading(true);
     const { data, error } = await supabase
       .from('sponsees')
-      .select('id, name, phone, current_step, streak_days, assignments(status, due_date)')
+      .select('id, name, phone, sobriety_date, current_step, streak_days, assignments(status, due_date)')
       .order('name');
 
     if (error) setError(error.message);
@@ -60,7 +61,7 @@ export function useSponsee(id: string | undefined) {
     const { data, error } = await supabase
       .from('sponsees')
       .select(
-        'id, name, phone, notes, current_step, streak_days, assignments(id, status, due_date, worksheet:worksheets(id, title, step))'
+        'id, name, phone, notes, sobriety_date, current_step, streak_days, assignments(id, status, due_date, worksheet:worksheets(id, title, step))'
       )
       .eq('id', id)
       .maybeSingle();
@@ -85,13 +86,23 @@ export function useSponsee(id: string | undefined) {
   return { sponsee, loading, error, refetch };
 }
 
-export async function addSponsee({ name, phone }: { name: string; phone: string | null }) {
+export async function addSponsee({
+  name,
+  phone,
+  sobrietyDate,
+}: {
+  name: string;
+  phone: string | null;
+  sobrietyDate: string | null;
+}) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error('Not signed in');
 
-  const { error } = await supabase.from('sponsees').insert({ sponsor_id: user.id, name, phone });
+  const { error } = await supabase
+    .from('sponsees')
+    .insert({ sponsor_id: user.id, name, phone, sobriety_date: sobrietyDate });
   if (error) throw error;
 }
 
@@ -100,6 +111,7 @@ export interface SponseeInput {
   phone: string | null;
   current_step: string;
   notes?: string | null;
+  sobriety_date?: string | null;
 }
 
 export async function updateSponsee(id: string, input: SponseeInput) {
