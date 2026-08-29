@@ -7,6 +7,7 @@ create table public.sponsors (
   id uuid primary key references auth.users (id) on delete cascade,
   email text not null,
   push_token text,
+  faq_prompt_dismissed_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -186,6 +187,44 @@ create policy "Signed-in sponsors can add worksheet-reading links"
 
 create policy "Signed-in sponsors can delete worksheet-reading links"
   on public.worksheet_readings for delete
+  to authenticated
+  using (true);
+
+-- ─── faq_items ───────────────────────────────────────────────────────────
+-- Shared reference content for sponsors (not per-sponsor), same ownership
+-- model as worksheets/readings. sort_order gives explicit display control;
+-- each row is independently addressable by id so a future feature can
+-- deep-link to a specific answer without a schema change.
+create table public.faq_items (
+  id uuid primary key default gen_random_uuid(),
+  question text not null,
+  answer text not null,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create index faq_items_sort_order_idx on public.faq_items (sort_order);
+
+alter table public.faq_items enable row level security;
+
+create policy "Signed-in sponsors can view faq items"
+  on public.faq_items for select
+  to authenticated
+  using (true);
+
+create policy "Signed-in sponsors can add faq items"
+  on public.faq_items for insert
+  to authenticated
+  with check (true);
+
+create policy "Signed-in sponsors can update faq items"
+  on public.faq_items for update
+  to authenticated
+  using (true)
+  with check (true);
+
+create policy "Signed-in sponsors can delete faq items"
+  on public.faq_items for delete
   to authenticated
   using (true);
 

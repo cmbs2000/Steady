@@ -64,6 +64,30 @@ export type Database = {
           },
         ];
       };
+      faq_items: {
+        Row: {
+          answer: string;
+          created_at: string;
+          id: string;
+          question: string;
+          sort_order: number;
+        };
+        Insert: {
+          answer: string;
+          created_at?: string;
+          id?: string;
+          question: string;
+          sort_order?: number;
+        };
+        Update: {
+          answer?: string;
+          created_at?: string;
+          id?: string;
+          question?: string;
+          sort_order?: number;
+        };
+        Relationships: [];
+      };
       readings: {
         Row: {
           chapter_or_section: string;
@@ -214,18 +238,21 @@ export type Database = {
         Row: {
           created_at: string;
           email: string;
+          faq_prompt_dismissed_at: string | null;
           id: string;
           push_token: string | null;
         };
         Insert: {
           created_at?: string;
           email: string;
+          faq_prompt_dismissed_at?: string | null;
           id: string;
           push_token?: string | null;
         };
         Update: {
           created_at?: string;
           email?: string;
+          faq_prompt_dismissed_at?: string | null;
           id?: string;
           push_token?: string | null;
         };
