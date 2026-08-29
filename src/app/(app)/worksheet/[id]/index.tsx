@@ -7,6 +7,7 @@ import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { addRecurringAssignment, removeRecurringAssignment, useRecurringAssignments } from '@/data/recurringAssignments';
+import { assignReading, useReadingsForWorksheet } from '@/data/readings';
 import { useSelection } from '@/data/selection';
 import { useSponsees } from '@/data/sponsees';
 import { assignWorksheet, useWorksheet } from '@/data/worksheets';
@@ -52,18 +53,30 @@ export default function WorksheetDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { worksheet, loading, error, refetch } = useWorksheet(id);
+  const { readings: attachedReadings, refetch: refetchReadings } = useReadingsForWorksheet(id);
   const { sponsees, refetch: refetchSponsees } = useSponsees();
   const { selectedSponseeId } = useSelection();
   const { recurring, refetch: refetchRecurring } = useRecurringAssignments(selectedSponseeId ?? undefined);
   const [assigning, setAssigning] = useState(false);
   const [togglingRecurring, setTogglingRecurring] = useState(false);
+  const [selectedReadingIds, setSelectedReadingIds] = useState<Set<string>>(new Set());
+
+  const toggleReading = (readingId: string) => {
+    setSelectedReadingIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(readingId)) next.delete(readingId);
+      else next.add(readingId);
+      return next;
+    });
+  };
 
   useFocusEffect(
     useCallback(() => {
       refetch();
+      refetchReadings();
       refetchSponsees();
       refetchRecurring();
-    }, [refetch, refetchSponsees, refetchRecurring])
+    }, [refetch, refetchReadings, refetchSponsees, refetchRecurring])
   );
 
   const selectedSponsee = sponsees.find((s) => s.id === selectedSponseeId);
@@ -91,6 +104,10 @@ export default function WorksheetDetailScreen() {
     if (!selectedSponsee) return;
     try {
       await assignWorksheet(selectedSponsee.id, worksheet.id);
+      await Promise.all(
+        Array.from(selectedReadingIds).map((readingId) => assignReading(selectedSponsee.id, readingId))
+      );
+      setSelectedReadingIds(new Set());
       setAssigning(true);
       setTimeout(() => setAssigning(false), 1600);
     } catch (err) {
@@ -161,12 +178,44 @@ export default function WorksheetDetailScreen() {
             <Text style={styles.promptText}>{p}</Text>
           </View>
         ))}
+
+        {attachedReadings.length > 0 && (
+          <>
+            <Text style={styles.sectionLabel}>Related Readings</Text>
+            <Text style={styles.readingsHint}>Check any to assign alongside this worksheet, as their own assignment.</Text>
+            <View style={styles.readingsList}>
+              {attachedReadings.map((r) => {
+                const checked = selectedReadingIds.has(r.id);
+                return (
+                  <Pressable
+                    key={r.id}
+                    style={[styles.readingCard, checked && styles.readingCardChecked]}
+                    onPress={() => toggleReading(r.id)}>
+                    <View style={styles.readingCardHeader}>
+                      <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
+                        {checked && <Ionicons name="checkmark" size={14} color={colors.surface} />}
+                      </View>
+                      <View style={styles.readingCardBody}>
+                        <Text style={styles.readingSource}>{r.source}</Text>
+                        <Text style={styles.readingChapter}>{r.chapter_or_section}</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.readingNote}>{r.sponsor_note}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        )}
       </ScrollView>
 
       <View style={styles.footer}>
         {selectedSponsee && (
           <Text style={styles.assignHint}>
             Assign to <Text style={styles.assignHintName}>{selectedSponsee.name}</Text>
+            {selectedReadingIds.size > 0
+              ? ` (+${selectedReadingIds.size} reading${selectedReadingIds.size > 1 ? 's' : ''})`
+              : ''}
           </Text>
         )}
         <View style={styles.footerButtons}>
@@ -230,6 +279,33 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   promptNumber: { fontSize: 14, fontWeight: '700', color: colors.primary, width: 18 },
   promptText: { flex: 1, fontSize: 14, color: colors.text, lineHeight: 20 },
   emptyText: { color: colors.textSecondary, fontSize: 14, padding: 16, textAlign: 'center' },
+  readingsHint: { fontSize: 12, color: colors.textSecondary, marginTop: -4, marginBottom: 8 },
+  readingsList: { gap: 10 },
+  readingCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    padding: 14,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  readingCardChecked: { backgroundColor: colors.primaryLight, borderColor: colors.primary },
+  readingCardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  checkboxChecked: { backgroundColor: colors.primary, borderColor: colors.primary },
+  readingCardBody: { flex: 1, gap: 2 },
+  readingSource: { fontSize: 11, fontWeight: '700', color: colors.primary, textTransform: 'uppercase' },
+  readingChapter: { fontSize: 15, fontWeight: '600', color: colors.text },
+  readingNote: { fontSize: 13, color: colors.textSecondary, lineHeight: 18 },
   footer: {
     padding: 16,
     gap: 10,

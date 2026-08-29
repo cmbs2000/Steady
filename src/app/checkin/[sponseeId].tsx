@@ -24,9 +24,9 @@ export default function SponseeCheckinScreen() {
     refetch();
   }, [refetch]);
 
-  const toggleDone = async (assignmentId: string, current: 'done' | 'pending' | 'overdue', worksheetTitle: string) => {
+  const toggleDone = async (assignmentId: string, current: 'done' | 'pending' | 'overdue', itemTitle: string) => {
     if (!sponseeId) return;
-    await setCheckinAssignmentStatus(sponseeId, assignmentId, current === 'done' ? 'pending' : 'done', worksheetTitle);
+    await setCheckinAssignmentStatus(sponseeId, assignmentId, current === 'done' ? 'pending' : 'done', itemTitle);
     refetch();
   };
 
@@ -62,8 +62,8 @@ export default function SponseeCheckinScreen() {
           <Text style={styles.eyebrow}>Recovery Check-In</Text>
           <Text style={styles.greeting}>Hi {data.name.split(' ')[0]} 👋</Text>
           <Text style={styles.subtitle}>
-            Your sponsor set up this page so you can track your recovery worksheets together — no login or app to
-            download. Tap a worksheet below once you've completed it, and they'll see your progress.
+            Your sponsor set up this page so you can track your recovery worksheets and readings together — no login
+            or app to download. Check something off once you've completed it, and they'll see your progress.
           </Text>
 
           <View style={styles.progressRow}>
@@ -100,19 +100,20 @@ export default function SponseeCheckinScreen() {
           {data.assignments.map((a) => {
             const isDone = a.status === 'done';
             const s = statusStyles[a.status];
+            const title = a.kind === 'worksheet' ? a.worksheetTitle : `${a.readingSource} — ${a.readingChapterOrSection}`;
             return (
               <View key={a.assignmentId} style={[styles.item, isDone && styles.itemDone]}>
                 <View style={styles.itemHeader}>
                   <Pressable
                     style={[styles.checkbox, isDone && styles.checkboxChecked]}
-                    onPress={() => toggleDone(a.assignmentId, a.status, a.worksheetTitle)}
+                    onPress={() => toggleDone(a.assignmentId, a.status, title)}
                     hitSlop={8}>
                     {isDone && <Ionicons name="checkmark" size={16} color={colors.surface} />}
                   </Pressable>
                   <View style={styles.itemBody}>
-                    <Text style={[styles.itemTitle, isDone && styles.itemTitleDone]}>{a.worksheetTitle}</Text>
+                    <Text style={[styles.itemTitle, isDone && styles.itemTitleDone]}>{title}</Text>
                     <Text style={styles.itemMeta}>
-                      {a.worksheetStep} · due {a.dueDate ?? '—'}
+                      {a.kind === 'worksheet' ? a.worksheetStep : 'Reading'} · due {a.dueDate ?? '—'}
                     </Text>
                   </View>
                   {!isDone && (
@@ -122,15 +123,17 @@ export default function SponseeCheckinScreen() {
                   )}
                 </View>
 
-                <View style={styles.itemDetail}>
-                  <Text style={styles.itemPurpose}>{a.worksheetPurpose}</Text>
-                  {a.worksheetPrompts.map((p, i) => (
-                    <View key={i} style={styles.promptRow}>
-                      <Text style={styles.promptNumber}>{i + 1}</Text>
-                      <Text style={styles.promptText}>{p}</Text>
-                    </View>
-                  ))}
-                </View>
+                {a.kind === 'worksheet' && (
+                  <View style={styles.itemDetail}>
+                    <Text style={styles.itemPurpose}>{a.worksheetPurpose}</Text>
+                    {a.worksheetPrompts.map((p, i) => (
+                      <View key={i} style={styles.promptRow}>
+                        <Text style={styles.promptNumber}>{i + 1}</Text>
+                        <Text style={styles.promptText}>{p}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
             );
           })}

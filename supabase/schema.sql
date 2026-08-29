@@ -125,22 +125,95 @@ create policy "Signed-in sponsors can delete worksheets"
   to authenticated
   using (true);
 
+-- ─── readings ────────────────────────────────────────────────────────────
+-- Reading references from AA/NA literature (Big Book, 12&12, Living Sober,
+-- etc). Shared library content, same ownership model as worksheets. No page
+-- numbers on purpose -- chapter/section names are stable across editions,
+-- page numbers aren't.
+create table public.readings (
+  id uuid primary key default gen_random_uuid(),
+  source text not null,
+  chapter_or_section text not null,
+  step_or_theme text not null,
+  sponsor_note text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.readings enable row level security;
+
+create policy "Signed-in sponsors can view the reading library"
+  on public.readings for select
+  to authenticated
+  using (true);
+
+create policy "Signed-in sponsors can add readings"
+  on public.readings for insert
+  to authenticated
+  with check (true);
+
+create policy "Signed-in sponsors can update readings"
+  on public.readings for update
+  to authenticated
+  using (true)
+  with check (true);
+
+create policy "Signed-in sponsors can delete readings"
+  on public.readings for delete
+  to authenticated
+  using (true);
+
+-- ─── worksheet_readings (many-to-many join) ─────────────────────────────
+create table public.worksheet_readings (
+  worksheet_id uuid not null references public.worksheets (id) on delete cascade,
+  reading_id uuid not null references public.readings (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (worksheet_id, reading_id)
+);
+
+create index worksheet_readings_reading_id_idx on public.worksheet_readings (reading_id);
+
+alter table public.worksheet_readings enable row level security;
+
+create policy "Signed-in sponsors can view worksheet-reading links"
+  on public.worksheet_readings for select
+  to authenticated
+  using (true);
+
+create policy "Signed-in sponsors can add worksheet-reading links"
+  on public.worksheet_readings for insert
+  to authenticated
+  with check (true);
+
+create policy "Signed-in sponsors can delete worksheet-reading links"
+  on public.worksheet_readings for delete
+  to authenticated
+  using (true);
+
 -- ─── assignments ─────────────────────────────────────────────────────────
--- Links a sponsee to a worksheet. Ownership flows through the sponsee, so
--- policies check that the sponsee belongs to the requesting sponsor.
+-- Links a sponsee to either a worksheet or a reading (exactly one of
+-- worksheet_id / reading_id is set). Widened rather than a parallel
+-- reading_assignments table so readings get due dates, status tracking,
+-- overdue detection, and check-in page display for free from the same
+-- machinery. Ownership flows through the sponsee, so policies check that
+-- the sponsee belongs to the requesting sponsor.
 create table public.assignments (
   id uuid primary key default gen_random_uuid(),
   sponsee_id uuid not null references public.sponsees (id) on delete cascade,
-  worksheet_id uuid not null references public.worksheets (id) on delete cascade,
+  worksheet_id uuid references public.worksheets (id) on delete cascade,
+  reading_id uuid references public.readings (id) on delete cascade,
   status text not null default 'pending' check (status in ('pending', 'done', 'overdue')),
   assigned_date date not null default current_date,
   due_date date,
   overdue_notified_at timestamptz,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  constraint assignments_exactly_one_content check (
+    (worksheet_id is not null and reading_id is null) or (worksheet_id is null and reading_id is not null)
+  )
 );
 
 create index assignments_sponsee_id_idx on public.assignments (sponsee_id);
 create index assignments_worksheet_id_idx on public.assignments (worksheet_id);
+create index assignments_reading_id_idx on public.assignments (reading_id);
 
 alter table public.assignments enable row level security;
 
@@ -211,17 +284,25 @@ returns table (
   worksheet_title text,
   worksheet_step text,
   worksheet_purpose text,
-  worksheet_prompts text[]
+  worksheet_prompts text[],
+  reading_id uuid,
+  reading_source text,
+  reading_chapter_or_section text
 )
 language plpgsql
 security definer set search_path = public
 as $$
 begin
   return query
-    select s.id, s.name, s.streak_days, s.sobriety_date, a.id, a.status, a.due_date, w.id, w.title, w.step, w.purpose, w.prompts
+    select
+      s.id, s.name, s.streak_days, s.sobriety_date,
+      a.id, a.status, a.due_date,
+      w.id, w.title, w.step, w.purpose, w.prompts,
+      r.id, r.source, r.chapter_or_section
     from public.sponsees s
     left join public.assignments a on a.sponsee_id = s.id
     left join public.worksheets w on w.id = a.worksheet_id
+    left join public.readings r on r.id = a.reading_id
     where s.id = p_sponsee_id;
 end;
 $$;

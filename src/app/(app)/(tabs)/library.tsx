@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import type { DbReading } from '@/data/readings';
+import { useReadings } from '@/data/readings';
 import { useSelection } from '@/data/selection';
 import { useSponsees } from '@/data/sponsees';
 import type { DbWorksheet } from '@/data/worksheets';
@@ -11,22 +13,26 @@ import { STEP_OPTIONS, useWorksheets } from '@/data/worksheets';
 import { type ThemeColors, useThemeColors } from '@/theme';
 
 const STEP_FILTERS = ['All', ...STEP_OPTIONS];
+type LibraryTab = 'worksheets' | 'readings';
 
 export default function LibraryScreen() {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const { worksheets, loading, error, refetch } = useWorksheets();
+  const { readings, loading: loadingReadings, error: readingsError, refetch: refetchReadings } = useReadings();
   const { sponsees, refetch: refetchSponsees } = useSponsees();
   const { selectedSponseeId, setSelectedSponseeId } = useSelection();
+  const [tab, setTab] = useState<LibraryTab>('worksheets');
   const [query, setQuery] = useState('');
   const [stepFilter, setStepFilter] = useState('All');
 
   useFocusEffect(
     useCallback(() => {
       refetch();
+      refetchReadings();
       refetchSponsees();
-    }, [refetch, refetchSponsees])
+    }, [refetch, refetchReadings, refetchSponsees])
   );
 
   useEffect(() => {
@@ -42,6 +48,19 @@ export default function LibraryScreen() {
       return matchesStep && matchesQuery;
     });
   }, [worksheets, stepFilter, query]);
+
+  const filteredReadings = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return readings.filter((r) => {
+      const matchesStep = stepFilter === 'All' || r.step_or_theme === stepFilter;
+      const matchesQuery =
+        !q ||
+        r.source.toLowerCase().includes(q) ||
+        r.chapter_or_section.toLowerCase().includes(q) ||
+        r.sponsor_note.toLowerCase().includes(q);
+      return matchesStep && matchesQuery;
+    });
+  }, [readings, stepFilter, query]);
 
   const renderItem = ({ item }: { item: DbWorksheet }) => (
     <Pressable
@@ -59,12 +78,42 @@ export default function LibraryScreen() {
     </Pressable>
   );
 
+  const renderReadingItem = ({ item }: { item: DbReading }) => (
+    <View style={styles.readingCard}>
+      <View style={styles.readingHeader}>
+        <View style={styles.readingHeaderText}>
+          <Text style={styles.readingSource}>{item.source}</Text>
+          <Text style={styles.readingChapter}>{item.chapter_or_section}</Text>
+        </View>
+        <View style={styles.stepBadge}>
+          <Text style={styles.stepBadgeText}>{item.step_or_theme}</Text>
+        </View>
+      </View>
+      <Text style={styles.readingNote}>{item.sponsor_note}</Text>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Worksheet Library</Text>
-        <Pressable style={styles.addButton} onPress={() => router.push('/worksheet/new')} hitSlop={8}>
-          <Ionicons name="add" size={22} color={colors.surface} />
+        <Text style={styles.title}>Library</Text>
+        {tab === 'worksheets' && (
+          <Pressable style={styles.addButton} onPress={() => router.push('/worksheet/new')} hitSlop={8}>
+            <Ionicons name="add" size={22} color={colors.surface} />
+          </Pressable>
+        )}
+      </View>
+
+      <View style={styles.tabRow}>
+        <Pressable
+          style={[styles.tabButton, tab === 'worksheets' && styles.tabButtonActive]}
+          onPress={() => setTab('worksheets')}>
+          <Text style={[styles.tabButtonText, tab === 'worksheets' && styles.tabButtonTextActive]}>Worksheets</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.tabButton, tab === 'readings' && styles.tabButtonActive]}
+          onPress={() => setTab('readings')}>
+          <Text style={[styles.tabButtonText, tab === 'readings' && styles.tabButtonTextActive]}>Readings</Text>
         </Pressable>
       </View>
 
@@ -73,7 +122,7 @@ export default function LibraryScreen() {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Search worksheets"
+          placeholder={tab === 'worksheets' ? 'Search worksheets' : 'Search readings'}
           placeholderTextColor={colors.textSecondary}
           style={styles.searchInput}
         />
@@ -97,7 +146,7 @@ export default function LibraryScreen() {
         }}
       />
 
-      {sponsees.length > 0 && (
+      {tab === 'worksheets' && sponsees.length > 0 && (
         <View style={styles.assignToRow}>
           <Text style={styles.assignToLabel}>Assigning to</Text>
           <FlatList
@@ -120,21 +169,39 @@ export default function LibraryScreen() {
         </View>
       )}
 
-      {loading && worksheets.length === 0 ? (
+      {tab === 'worksheets' ? (
+        loading && worksheets.length === 0 ? (
+          <View style={styles.centered}>
+            <ActivityIndicator color={colors.primary} />
+          </View>
+        ) : error ? (
+          <View style={styles.centered}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={filtered}
+            keyExtractor={(item) => item.id}
+            renderItem={renderItem}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={<Text style={styles.emptyText}>No worksheets match your search.</Text>}
+          />
+        )
+      ) : loadingReadings && readings.length === 0 ? (
         <View style={styles.centered}>
           <ActivityIndicator color={colors.primary} />
         </View>
-      ) : error ? (
+      ) : readingsError ? (
         <View style={styles.centered}>
-          <Text style={styles.errorText}>{error}</Text>
+          <Text style={styles.errorText}>{readingsError}</Text>
         </View>
       ) : (
         <FlatList
-          data={filtered}
+          data={filteredReadings}
           keyExtractor={(item) => item.id}
-          renderItem={renderItem}
+          renderItem={renderReadingItem}
           contentContainerStyle={styles.listContent}
-          ListEmptyComponent={<Text style={styles.emptyText}>No worksheets match your search.</Text>}
+          ListEmptyComponent={<Text style={styles.emptyText}>No readings match your search.</Text>}
         />
       )}
     </SafeAreaView>
@@ -160,6 +227,18 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
   },
   title: { fontSize: 28, fontWeight: '700', color: colors.text },
+  tabRow: { flexDirection: 'row', gap: 8, marginHorizontal: 16, marginBottom: 10 },
+  tabButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 9,
+    borderRadius: 10,
+    backgroundColor: colors.chipInactive,
+  },
+  tabButtonActive: { backgroundColor: colors.primary },
+  tabButtonText: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
+  tabButtonTextActive: { color: colors.surface },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -217,4 +296,17 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   stepBadge: { backgroundColor: colors.primaryLight, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
   stepBadgeText: { fontSize: 11, fontWeight: '700', color: colors.primary },
   emptyText: { textAlign: 'center', color: colors.textSecondary, marginTop: 40 },
+  readingCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    padding: 14,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  readingHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  readingHeaderText: { flex: 1, gap: 2 },
+  readingSource: { fontSize: 11, fontWeight: '700', color: colors.primary, textTransform: 'uppercase' },
+  readingChapter: { fontSize: 15, fontWeight: '600', color: colors.text },
+  readingNote: { fontSize: 13, color: colors.textSecondary, lineHeight: 18 },
 });

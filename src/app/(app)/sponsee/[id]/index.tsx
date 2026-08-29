@@ -87,8 +87,8 @@ export default function SponseeDetailScreen() {
     router.push('/library');
   };
 
-  const removeAssignment = (assignmentId: string, worksheetTitle: string) => {
-    Alert.alert('Remove worksheet?', `This removes "${worksheetTitle}" from ${sponsee.name}'s assignments.`, [
+  const removeAssignment = (assignmentId: string, itemTitle: string) => {
+    Alert.alert('Remove assignment?', `This removes "${itemTitle}" from ${sponsee.name}'s assignments.`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Remove',
@@ -209,23 +209,28 @@ export default function SponseeDetailScreen() {
           </View>
         )}
 
-        <Text style={styles.sectionTitle}>Assigned Worksheets</Text>
+        <Text style={styles.sectionTitle}>Assignments</Text>
 
-        {sponsee.assignments.length === 0 && <Text style={styles.emptyText}>No worksheets assigned yet.</Text>}
+        {sponsee.assignments.length === 0 && <Text style={styles.emptyText}>Nothing assigned yet.</Text>}
 
         {sponsee.assignments.map((a) => {
-          if (!a.worksheet) return null;
           const s = statusStyles[a.status];
+          const title = a.worksheet ? a.worksheet.title : a.reading ? a.reading.chapter_or_section : 'Removed item';
+          const meta = a.worksheet ? a.worksheet.step : a.reading ? a.reading.source : null;
           return (
             <View key={a.id}>
               <View style={styles.worksheetRow}>
                 <View style={styles.worksheetRowMain}>
                   <View style={styles.worksheetRowLeft}>
-                    <Pressable onPress={() => router.push(`/worksheet/${a.worksheet!.id}`)}>
-                      <Text style={styles.worksheetTitle}>{a.worksheet.title}</Text>
-                    </Pressable>
+                    {a.worksheet ? (
+                      <Pressable onPress={() => router.push(`/worksheet/${a.worksheet!.id}`)}>
+                        <Text style={styles.worksheetTitle}>{title}</Text>
+                      </Pressable>
+                    ) : (
+                      <Text style={styles.worksheetTitle}>{title}</Text>
+                    )}
                     <View style={styles.metaRow}>
-                      <Text style={styles.worksheetMeta}>{a.worksheet.step} · due </Text>
+                      <Text style={styles.worksheetMeta}>{meta ? `${meta} · ` : ''}due </Text>
                       <Pressable onPress={() => setEditingDueDateFor(a.id)} hitSlop={4}>
                         <Text style={styles.dueDateLink}>{a.due_date ?? 'set date'}</Text>
                       </Pressable>
@@ -236,10 +241,7 @@ export default function SponseeDetailScreen() {
                     <Text style={[styles.statusText, { color: s.fg }]}>{s.label}</Text>
                   </View>
                 </View>
-                <Pressable
-                  style={styles.removeButton}
-                  onPress={() => removeAssignment(a.id, a.worksheet!.title)}
-                  hitSlop={8}>
+                <Pressable style={styles.removeButton} onPress={() => removeAssignment(a.id, title)} hitSlop={8}>
                   <Ionicons name="trash-outline" size={18} color={colors.textSecondary} />
                 </Pressable>
               </View>

@@ -17,7 +17,9 @@ Deno.serve(async (_req: Request) => {
 
   const { data: overdue, error } = await supabase
     .from("assignments")
-    .select("id, sponsee:sponsees!inner(id, name, sponsor_id, archived_at), worksheet:worksheets(title)")
+    .select(
+      "id, sponsee:sponsees!inner(id, name, sponsor_id, archived_at), worksheet:worksheets(title), reading:readings(source, chapter_or_section)"
+    )
     .eq("status", "pending")
     .is("overdue_notified_at", null)
     .is("sponsee.archived_at", null)
@@ -29,16 +31,18 @@ Deno.serve(async (_req: Request) => {
     });
   }
 
-  type Item = { sponseeId: string; sponseeName: string; worksheetTitle: string };
+  type Item = { sponseeId: string; sponseeName: string; itemTitle: string };
   const bySponsor = new Map<string, Item[]>();
   for (const row of overdue as any[]) {
     const sponsorId = row.sponsee?.sponsor_id;
     if (!sponsorId) continue;
     const items = bySponsor.get(sponsorId) ?? [];
+    const itemTitle = row.worksheet?.title
+      ?? (row.reading ? `${row.reading.source} — ${row.reading.chapter_or_section}` : "an assignment");
     items.push({
       sponseeId: row.sponsee?.id,
       sponseeName: row.sponsee?.name ?? "A sponsee",
-      worksheetTitle: row.worksheet?.title ?? "a worksheet",
+      itemTitle,
     });
     bySponsor.set(sponsorId, items);
   }
@@ -52,13 +56,13 @@ Deno.serve(async (_req: Request) => {
   for (const sponsor of sponsors ?? []) {
     if (!sponsor.push_token) continue;
     const items = bySponsor.get(sponsor.id)!;
-    const title = items.length === 1 ? "1 worksheet is overdue" : `${items.length} worksheets are overdue`;
+    const title = items.length === 1 ? "1 item is overdue" : `${items.length} items are overdue`;
     const body =
       items.length <= 3
-        ? items.map((i) => `${i.sponseeName}: ${i.worksheetTitle}`).join("; ")
+        ? items.map((i) => `${i.sponseeName}: ${i.itemTitle}`).join("; ")
         : items
             .slice(0, 3)
-            .map((i) => `${i.sponseeName}: ${i.worksheetTitle}`)
+            .map((i) => `${i.sponseeName}: ${i.itemTitle}`)
             .join("; ") + `, and ${items.length - 3} more`;
 
     // Only deep-link to a specific sponsee when the whole batch is about

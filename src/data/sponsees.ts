@@ -21,6 +21,7 @@ export interface DbSponseeDetail extends Omit<DbSponsee, 'assignments'> {
     status: 'pending' | 'done' | 'overdue';
     due_date: string | null;
     worksheet: { id: string; title: string; step: string } | null;
+    reading: { id: string; source: string; chapter_or_section: string } | null;
   }[];
 }
 
@@ -65,7 +66,7 @@ export function useSponsee(id: string | undefined) {
     const { data, error } = await supabase
       .from('sponsees')
       .select(
-        'id, name, phone, notes, sobriety_date, current_step, streak_days, archived_at, assignments(id, status, due_date, worksheet:worksheets(id, title, step))'
+        'id, name, phone, notes, sobriety_date, current_step, streak_days, archived_at, assignments(id, status, due_date, worksheet:worksheets(id, title, step), reading:readings(id, source, chapter_or_section))'
       )
       .eq('id', id)
       .maybeSingle();

@@ -3,10 +3,14 @@ import { useCallback, useState } from 'react';
 import { getEffectiveStatus } from '@/lib/assignmentStatus';
 import { supabase } from '@/lib/supabase';
 
-export interface CheckinAssignment {
+interface CheckinItemBase {
   assignmentId: string;
   status: 'pending' | 'done' | 'overdue';
   dueDate: string | null;
+}
+
+export interface CheckinWorksheetItem extends CheckinItemBase {
+  kind: 'worksheet';
   worksheetId: string;
   worksheetTitle: string;
   worksheetStep: string;
@@ -14,11 +18,20 @@ export interface CheckinAssignment {
   worksheetPrompts: string[];
 }
 
+export interface CheckinReadingItem extends CheckinItemBase {
+  kind: 'reading';
+  readingId: string;
+  readingSource: string;
+  readingChapterOrSection: string;
+}
+
+export type CheckinItem = CheckinWorksheetItem | CheckinReadingItem;
+
 export interface CheckinData {
   name: string;
   streakDays: number;
   sobrietyDate: string | null;
-  assignments: CheckinAssignment[];
+  assignments: CheckinItem[];
 }
 
 export function useCheckin(sponseeId: string | undefined) {
@@ -44,16 +57,31 @@ export function useCheckin(sponseeId: string | undefined) {
         sobrietyDate: rows[0].sobriety_date ?? null,
         assignments: rows
           .filter((r) => r.assignment_id)
-          .map((r) => ({
-            assignmentId: r.assignment_id as string,
-            status: getEffectiveStatus(r.status as string, r.due_date),
-            dueDate: r.due_date,
-            worksheetId: r.worksheet_id as string,
-            worksheetTitle: r.worksheet_title as string,
-            worksheetStep: r.worksheet_step as string,
-            worksheetPurpose: r.worksheet_purpose as string,
-            worksheetPrompts: (r.worksheet_prompts as string[]) ?? [],
-          })),
+          .map((r): CheckinItem => {
+            const base = {
+              assignmentId: r.assignment_id as string,
+              status: getEffectiveStatus(r.status as string, r.due_date),
+              dueDate: r.due_date,
+            };
+            if (r.reading_id) {
+              return {
+                ...base,
+                kind: 'reading',
+                readingId: r.reading_id,
+                readingSource: r.reading_source as string,
+                readingChapterOrSection: r.reading_chapter_or_section as string,
+              };
+            }
+            return {
+              ...base,
+              kind: 'worksheet',
+              worksheetId: r.worksheet_id as string,
+              worksheetTitle: r.worksheet_title as string,
+              worksheetStep: r.worksheet_step as string,
+              worksheetPurpose: r.worksheet_purpose as string,
+              worksheetPrompts: (r.worksheet_prompts as string[]) ?? [],
+            };
+          }),
       });
     }
     setLoading(false);
@@ -66,7 +94,7 @@ export async function setCheckinAssignmentStatus(
   sponseeId: string,
   assignmentId: string,
   status: 'pending' | 'done' | 'overdue',
-  worksheetTitle?: string
+  itemTitle?: string
 ) {
   const { error } = await supabase.rpc('checkin_set_assignment_status', {
     p_sponsee_id: sponseeId,
@@ -79,7 +107,7 @@ export async function setCheckinAssignmentStatus(
   // sponsee's check-in action should ever fail or wait on.
   if (status === 'done') {
     supabase.functions
-      .invoke('notify-sponsor', { body: { sponsee_id: sponseeId, worksheet_title: worksheetTitle } })
+      .invoke('notify-sponsor', { body: { sponsee_id: sponseeId, worksheet_title: itemTitle } })
       .catch(() => {});
   }
 }

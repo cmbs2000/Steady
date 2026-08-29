@@ -12,27 +12,33 @@ export type Database = {
           created_at: string;
           due_date: string | null;
           id: string;
+          overdue_notified_at: string | null;
+          reading_id: string | null;
           sponsee_id: string;
           status: string;
-          worksheet_id: string;
+          worksheet_id: string | null;
         };
         Insert: {
           assigned_date?: string;
           created_at?: string;
           due_date?: string | null;
           id?: string;
+          overdue_notified_at?: string | null;
+          reading_id?: string | null;
           sponsee_id: string;
           status?: string;
-          worksheet_id: string;
+          worksheet_id?: string | null;
         };
         Update: {
           assigned_date?: string;
           created_at?: string;
           due_date?: string | null;
           id?: string;
+          overdue_notified_at?: string | null;
+          reading_id?: string | null;
           sponsee_id?: string;
           status?: string;
-          worksheet_id?: string;
+          worksheet_id?: string | null;
         };
         Relationships: [
           {
@@ -44,6 +50,73 @@ export type Database = {
           },
           {
             foreignKeyName: 'assignments_worksheet_id_fkey';
+            columns: ['worksheet_id'];
+            isOneToOne: false;
+            referencedRelation: 'worksheets';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'assignments_reading_id_fkey';
+            columns: ['reading_id'];
+            isOneToOne: false;
+            referencedRelation: 'readings';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      readings: {
+        Row: {
+          chapter_or_section: string;
+          created_at: string;
+          id: string;
+          source: string;
+          sponsor_note: string;
+          step_or_theme: string;
+        };
+        Insert: {
+          chapter_or_section: string;
+          created_at?: string;
+          id?: string;
+          source: string;
+          sponsor_note: string;
+          step_or_theme: string;
+        };
+        Update: {
+          chapter_or_section?: string;
+          created_at?: string;
+          id?: string;
+          source?: string;
+          sponsor_note?: string;
+          step_or_theme?: string;
+        };
+        Relationships: [];
+      };
+      worksheet_readings: {
+        Row: {
+          created_at: string;
+          reading_id: string;
+          worksheet_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          reading_id: string;
+          worksheet_id: string;
+        };
+        Update: {
+          created_at?: string;
+          reading_id?: string;
+          worksheet_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'worksheet_readings_reading_id_fkey';
+            columns: ['reading_id'];
+            isOneToOne: false;
+            referencedRelation: 'readings';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'worksheet_readings_worksheet_id_fkey';
             columns: ['worksheet_id'];
             isOneToOne: false;
             referencedRelation: 'worksheets';
@@ -203,11 +276,14 @@ export type Database = {
           sobriety_date: string | null;
           streak_days: number;
           status: string;
-          worksheet_id: string;
-          worksheet_step: string;
-          worksheet_title: string;
-          worksheet_purpose: string;
-          worksheet_prompts: string[];
+          worksheet_id: string | null;
+          worksheet_step: string | null;
+          worksheet_title: string | null;
+          worksheet_purpose: string | null;
+          worksheet_prompts: string[] | null;
+          reading_id: string | null;
+          reading_source: string | null;
+          reading_chapter_or_section: string | null;
         }[];
       };
       checkin_set_assignment_status: {
