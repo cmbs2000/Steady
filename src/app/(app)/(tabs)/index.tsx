@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { DbSponsee } from '@/data/sponsees';
 import { useSponsees } from '@/data/sponsees';
+import { useFaqPromptDismissed } from '@/data/sponsor';
 import { daysSober, sobrietyMilestoneLabel } from '@/lib/sobriety';
 import { type ThemeColors, useThemeColors } from '@/theme';
 
@@ -17,19 +18,29 @@ const SORT_OPTIONS: { key: SortBy; label: string }[] = [
   { key: 'overdue', label: 'Overdue' },
 ];
 
+// New sponsors are the ones most likely to want the FAQ; once a sponsor is
+// juggling a handful of sponsees they've almost certainly found their
+// footing, so the prompt stops being worth the screen space.
+const FAQ_PROMPT_SPONSEE_THRESHOLD = 3;
+
 export default function DashboardScreen() {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const { sponsees, loading, error, refetch } = useSponsees();
+  const { dismissed: faqPromptDismissed, refetch: refetchFaqPrompt, dismiss: dismissFaqPrompt } =
+    useFaqPromptDismissed();
   const [query, setQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('name');
 
   useFocusEffect(
     useCallback(() => {
       refetch();
-    }, [refetch])
+      refetchFaqPrompt();
+    }, [refetch, refetchFaqPrompt])
   );
+
+  const showFaqPrompt = faqPromptDismissed === false && sponsees.length < FAQ_PROMPT_SPONSEE_THRESHOLD;
 
   const visibleSponsees = useMemo(() => {
     const filtered = sponsees.filter((s) => s.name.toLowerCase().includes(query.trim().toLowerCase()));
@@ -109,6 +120,21 @@ export default function DashboardScreen() {
           </Pressable>
         </View>
       </View>
+
+      {showFaqPrompt && (
+        <Pressable style={styles.faqBanner} onPress={() => router.push('/faq')}>
+          <View style={styles.faqBannerIcon}>
+            <Ionicons name="help-circle" size={20} color={colors.primary} />
+          </View>
+          <View style={styles.faqBannerBody}>
+            <Text style={styles.faqBannerTitle}>New to sponsoring?</Text>
+            <Text style={styles.faqBannerText}>A few honest answers to common first-time questions.</Text>
+          </View>
+          <Pressable onPress={dismissFaqPrompt} hitSlop={8} style={styles.faqBannerClose}>
+            <Ionicons name="close" size={18} color={colors.textSecondary} />
+          </Pressable>
+        </Pressable>
+      )}
 
       {sponsees.length > 0 && (
         <>
@@ -217,6 +243,21 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.border,
   },
   searchInput: { flex: 1, fontSize: 15, color: colors.text },
+  faqBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    backgroundColor: colors.primaryLight,
+    borderRadius: 14,
+    padding: 14,
+  },
+  faqBannerIcon: { width: 22, alignItems: 'center' },
+  faqBannerBody: { flex: 1, gap: 2 },
+  faqBannerTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
+  faqBannerText: { fontSize: 12, color: colors.textSecondary, lineHeight: 16 },
+  faqBannerClose: { padding: 4 },
   sortRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, marginBottom: 12 },
   sortLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase' },
   sortChip: {
