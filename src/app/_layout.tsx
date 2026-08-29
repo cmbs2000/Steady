@@ -3,14 +3,23 @@ import { StatusBar } from 'expo-status-bar';
 
 import { AuthProvider } from '@/auth/AuthProvider';
 import { SelectionProvider } from '@/data/selection';
-import { useThemeColors } from '@/theme';
+import { ThemeProvider, useThemeColors, useThemePreference } from '@/theme';
 
 export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <RootLayoutInner />
+    </ThemeProvider>
+  );
+}
+
+function RootLayoutInner() {
   const colors = useThemeColors();
+  const { scheme } = useThemePreference();
   return (
     <AuthProvider>
       <SelectionProvider>
-        <StatusBar style="auto" />
+        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         <Stack
           screenOptions={{
             headerStyle: { backgroundColor: colors.surface },

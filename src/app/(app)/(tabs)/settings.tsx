@@ -5,11 +5,18 @@ import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/auth/AuthProvider';
-import { type ThemeColors, useThemeColors } from '@/theme';
+import { type ThemeColors, type ThemePreference, useThemeColors, useThemePreference } from '@/theme';
+
+const APPEARANCE_OPTIONS: { key: ThemePreference; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { key: 'system', label: 'System', icon: 'phone-portrait-outline' },
+  { key: 'light', label: 'Light', icon: 'sunny-outline' },
+  { key: 'dark', label: 'Dark', icon: 'moon-outline' },
+];
 
 export default function SettingsScreen() {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const { preference, setPreference } = useThemePreference();
   const { session, signOut, deleteAccount } = useAuth();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [confirmText, setConfirmText] = useState('');
@@ -41,6 +48,26 @@ export default function SettingsScreen() {
       <View style={styles.card}>
         <Text style={styles.label}>Signed in as</Text>
         <Text style={styles.email}>{session?.user.email}</Text>
+      </View>
+
+      <View style={[styles.card, styles.appearanceCard]}>
+        <Text style={styles.label}>Appearance</Text>
+        <View style={styles.appearanceRow}>
+          {APPEARANCE_OPTIONS.map((opt) => {
+            const active = opt.key === preference;
+            return (
+              <Pressable
+                key={opt.key}
+                style={[styles.appearanceOption, active && styles.appearanceOptionActive]}
+                onPress={() => setPreference(opt.key)}>
+                <Ionicons name={opt.icon} size={16} color={active ? colors.primary : colors.textSecondary} />
+                <Text style={[styles.appearanceOptionText, active && styles.appearanceOptionTextActive]}>
+                  {opt.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
 
       <Pressable style={styles.signOutButton} onPress={confirmSignOut}>
@@ -112,6 +139,23 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   label: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase' },
   email: { fontSize: 15, color: colors.text, fontWeight: '600' },
+  appearanceCard: { marginTop: 12, gap: 10 },
+  appearanceRow: { flexDirection: 'row', gap: 8 },
+  appearanceOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  appearanceOptionActive: { backgroundColor: colors.primaryLight, borderColor: colors.primary },
+  appearanceOptionText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  appearanceOptionTextActive: { color: colors.primary },
   signOutButton: {
     flexDirection: 'row',
     alignItems: 'center',
