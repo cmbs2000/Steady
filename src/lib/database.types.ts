@@ -70,7 +70,7 @@ export type Database = {
           created_at: string;
           id: string;
           source: string;
-          sponsor_note: string;
+          sponsor_note: string | null;
           step_or_theme: string;
         };
         Insert: {
@@ -78,7 +78,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           source: string;
-          sponsor_note: string;
+          sponsor_note?: string | null;
           step_or_theme: string;
         };
         Update: {
@@ -86,7 +86,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           source?: string;
-          sponsor_note?: string;
+          sponsor_note?: string | null;
           step_or_theme?: string;
         };
         Relationships: [];

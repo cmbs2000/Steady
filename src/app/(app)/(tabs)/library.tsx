@@ -57,7 +57,7 @@ export default function LibraryScreen() {
         !q ||
         r.source.toLowerCase().includes(q) ||
         r.chapter_or_section.toLowerCase().includes(q) ||
-        r.sponsor_note.toLowerCase().includes(q);
+        (r.sponsor_note ?? '').toLowerCase().includes(q);
       return matchesStep && matchesQuery;
     });
   }, [readings, stepFilter, query]);
@@ -79,7 +79,9 @@ export default function LibraryScreen() {
   );
 
   const renderReadingItem = ({ item }: { item: DbReading }) => (
-    <View style={styles.readingCard}>
+    <Pressable
+      style={({ pressed }) => [styles.readingCard, pressed && styles.cardPressed]}
+      onPress={() => router.push({ pathname: '/reading/[id]/edit', params: { id: item.id } })}>
       <View style={styles.readingHeader}>
         <View style={styles.readingHeaderText}>
           <Text style={styles.readingSource}>{item.source}</Text>
@@ -89,19 +91,20 @@ export default function LibraryScreen() {
           <Text style={styles.stepBadgeText}>{item.step_or_theme}</Text>
         </View>
       </View>
-      <Text style={styles.readingNote}>{item.sponsor_note}</Text>
-    </View>
+      {item.sponsor_note && <Text style={styles.readingNote}>{item.sponsor_note}</Text>}
+    </Pressable>
   );
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>Library</Text>
-        {tab === 'worksheets' && (
-          <Pressable style={styles.addButton} onPress={() => router.push('/worksheet/new')} hitSlop={8}>
-            <Ionicons name="add" size={22} color={colors.surface} />
-          </Pressable>
-        )}
+        <Pressable
+          style={styles.addButton}
+          onPress={() => router.push(tab === 'worksheets' ? '/worksheet/new' : '/reading/new')}
+          hitSlop={8}>
+          <Ionicons name="add" size={22} color={colors.surface} />
+        </Pressable>
       </View>
 
       <View style={styles.tabRow}>

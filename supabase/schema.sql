@@ -135,7 +135,7 @@ create table public.readings (
   source text not null,
   chapter_or_section text not null,
   step_or_theme text not null,
-  sponsor_note text not null,
+  sponsor_note text,
   created_at timestamptz not null default now()
 );
 

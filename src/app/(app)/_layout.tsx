@@ -68,6 +68,8 @@ export default function AppLayout() {
       <Stack.Screen name="worksheet/[id]/index" options={{ title: 'Worksheet' }} />
       <Stack.Screen name="worksheet/[id]/edit" options={{ title: 'Edit Worksheet', presentation: 'modal' }} />
       <Stack.Screen name="worksheet/new" options={{ title: 'New Worksheet', presentation: 'modal' }} />
+      <Stack.Screen name="reading/[id]/edit" options={{ title: 'Edit Reading', presentation: 'modal' }} />
+      <Stack.Screen name="reading/new" options={{ title: 'New Reading', presentation: 'modal' }} />
       <Stack.Screen name="add-sponsee" options={{ presentation: 'modal' }} />
       <Stack.Screen name="archived-sponsees" options={{ presentation: 'modal' }} />
     </Stack>
