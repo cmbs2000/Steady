@@ -119,7 +119,7 @@ export default function SettingsScreen() {
         )}
       </View>
 
-      <Text style={styles.versionText}>Steady v{Constants.expoConfig?.version ?? '1.0.0'}</Text>
+      <Text style={styles.versionText}>Steady v{Constants.expoConfig?.version ?? '1.0.0'} (OTA test)</Text>
     </SafeAreaView>
   );
 }

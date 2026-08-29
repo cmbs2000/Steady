@@ -16,7 +16,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "runtimeVersion": {
-        "policy": "fingerprint"
+        "policy": "appVersion"
       }
     },
     "web": {
@@ -51,6 +51,10 @@
     "updates": {
       "url": "https://u.expo.dev/2f912467-c3cc-40f7-b6a5-756ff8e866d3"
     },
-    "ios": {}
+    "ios": {
+      "runtimeVersion": {
+        "policy": "appVersion"
+      }
+    }
   }
 }
