@@ -42,6 +42,24 @@ export default function DashboardScreen() {
 
   const showFaqPrompt = faqPromptDismissed === false && sponsees.length < FAQ_PROMPT_SPONSEE_THRESHOLD;
 
+  const stats = useMemo(() => {
+    let doneCount = 0;
+    let totalCount = 0;
+    let overdueCount = 0;
+    for (const s of sponsees) {
+      for (const a of s.assignments) {
+        totalCount += 1;
+        if (a.status === 'done') doneCount += 1;
+        if (a.status === 'overdue') overdueCount += 1;
+      }
+    }
+    return {
+      activeCount: sponsees.length,
+      overdueCount,
+      completionRate: totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : null,
+    };
+  }, [sponsees]);
+
   const visibleSponsees = useMemo(() => {
     const filtered = sponsees.filter((s) => s.name.toLowerCase().includes(query.trim().toLowerCase()));
 
@@ -120,6 +138,25 @@ export default function DashboardScreen() {
           </Pressable>
         </View>
       </View>
+
+      {sponsees.length > 0 && (
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{stats.activeCount}</Text>
+            <Text style={styles.statLabel}>Active</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={[styles.statValue, stats.overdueCount > 0 && styles.statValueOverdue]}>
+              {stats.overdueCount}
+            </Text>
+            <Text style={styles.statLabel}>Overdue</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{stats.completionRate !== null ? `${stats.completionRate}%` : '—'}</Text>
+            <Text style={styles.statLabel}>Completion</Text>
+          </View>
+        </View>
+      )}
 
       {showFaqPrompt && (
         <Pressable style={styles.faqBanner} onPress={() => router.push('/faq')}>
@@ -229,6 +266,19 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  statsRow: { flexDirection: 'row', gap: 10, marginHorizontal: 16, marginBottom: 12 },
+  statCard: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  statValue: { fontSize: 20, fontWeight: '700', color: colors.text },
+  statValueOverdue: { color: colors.overdue },
+  statLabel: { fontSize: 11, fontWeight: '600', color: colors.textSecondary, textTransform: 'uppercase', marginTop: 2 },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
