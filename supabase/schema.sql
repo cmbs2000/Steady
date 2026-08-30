@@ -61,6 +61,10 @@ create table public.sponsees (
   streak_days integer not null default 0,
   last_activity_date date,
   archived_at timestamptz,
+  -- Set once, the first time any assignment for this sponsee goes overdue,
+  -- so the "missed a check-in?" FAQ nudge on the sponsee detail screen only
+  -- ever shows once per sponsee.
+  first_overdue_prompted_at timestamptz,
   created_at timestamptz not null default now()
 );
 

@@ -7,9 +7,10 @@ import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { MISSED_CHECKIN_FAQ_ID } from '@/data/faq';
 import { removeRecurringAssignment, useRecurringAssignments } from '@/data/recurringAssignments';
 import { useSelection } from '@/data/selection';
-import { useSponsee } from '@/data/sponsees';
+import { markFirstOverduePrompted, useSponsee } from '@/data/sponsees';
 import { unassignWorksheet, updateAssignmentDueDate } from '@/data/worksheets';
 import { getCheckinLink } from '@/lib/links';
 import { daysSober, sobrietyMilestoneLabel } from '@/lib/sobriety';
@@ -57,6 +58,22 @@ export default function SponseeDetailScreen() {
 
   const doneCount = sponsee.assignments.filter((a) => a.status === 'done').length;
   const magicLink = getCheckinLink(sponsee.id);
+  const hasOverdue = sponsee.assignments.some((a) => a.status === 'overdue');
+  const showMissedCheckinPrompt = hasOverdue && !sponsee.first_overdue_prompted_at;
+
+  const dismissMissedCheckinPrompt = async () => {
+    try {
+      await markFirstOverduePrompted(sponsee.id);
+      refetch();
+    } catch {
+      // non-critical -- worst case the nudge shows again next visit
+    }
+  };
+
+  const openMissedCheckinFaq = () => {
+    dismissMissedCheckinPrompt();
+    router.push({ pathname: '/faq', params: { highlight: MISSED_CHECKIN_FAQ_ID } });
+  };
 
   const copyLink = async () => {
     await Clipboard.setStringAsync(magicLink);
@@ -160,6 +177,21 @@ export default function SponseeDetailScreen() {
             </View>
           </View>
         </View>
+
+        {showMissedCheckinPrompt && (
+          <Pressable style={styles.faqNudge} onPress={openMissedCheckinFaq}>
+            <View style={styles.faqNudgeIcon}>
+              <Ionicons name="help-circle" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.faqNudgeBody}>
+              <Text style={styles.faqNudgeTitle}>First missed check-in</Text>
+              <Text style={styles.faqNudgeText}>New to this? Here's what other sponsors do.</Text>
+            </View>
+            <Pressable onPress={dismissMissedCheckinPrompt} hitSlop={8} style={styles.faqNudgeClose}>
+              <Ionicons name="close" size={18} color={colors.textSecondary} />
+            </Pressable>
+          </Pressable>
+        )}
 
         {sponsee.notes && (
           <View style={styles.notesCard}>
@@ -296,6 +328,19 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   summaryRow: { flexDirection: 'row', gap: 18, marginTop: 12 },
   summaryItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   summaryText: { fontSize: 13, fontWeight: '500', color: colors.text },
+  faqNudge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.primaryLight,
+    borderRadius: 14,
+    padding: 14,
+  },
+  faqNudgeIcon: { width: 22, alignItems: 'center' },
+  faqNudgeBody: { flex: 1, gap: 2 },
+  faqNudgeTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
+  faqNudgeText: { fontSize: 12, color: colors.textSecondary, lineHeight: 16 },
+  faqNudgeClose: { padding: 4 },
   notesCard: {
     backgroundColor: colors.pendingLight,
     borderRadius: 14,

@@ -16,6 +16,7 @@ export interface DbSponsee {
 
 export interface DbSponseeDetail extends Omit<DbSponsee, 'assignments'> {
   notes: string | null;
+  first_overdue_prompted_at: string | null;
   assignments: {
     id: string;
     status: 'pending' | 'done' | 'overdue';
@@ -66,7 +67,7 @@ export function useSponsee(id: string | undefined) {
     const { data, error } = await supabase
       .from('sponsees')
       .select(
-        'id, name, phone, notes, sobriety_date, current_step, streak_days, archived_at, assignments(id, status, due_date, worksheet:worksheets(id, title, step), reading:readings(id, source, chapter_or_section))'
+        'id, name, phone, notes, sobriety_date, current_step, streak_days, archived_at, first_overdue_prompted_at, assignments(id, status, due_date, worksheet:worksheets(id, title, step), reading:readings(id, source, chapter_or_section))'
       )
       .eq('id', id)
       .maybeSingle();
@@ -136,6 +137,14 @@ export async function archiveSponsee(id: string) {
 
 export async function restoreSponsee(id: string) {
   const { error } = await supabase.from('sponsees').update({ archived_at: null }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function markFirstOverduePrompted(id: string) {
+  const { error } = await supabase
+    .from('sponsees')
+    .update({ first_overdue_prompted_at: new Date().toISOString() })
+    .eq('id', id);
   if (error) throw error;
 }
 

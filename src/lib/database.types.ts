@@ -189,6 +189,7 @@ export type Database = {
           archived_at: string | null;
           created_at: string;
           current_step: string;
+          first_overdue_prompted_at: string | null;
           id: string;
           last_activity_date: string | null;
           name: string;
@@ -202,6 +203,7 @@ export type Database = {
           archived_at?: string | null;
           created_at?: string;
           current_step?: string;
+          first_overdue_prompted_at?: string | null;
           id?: string;
           last_activity_date?: string | null;
           name: string;
@@ -215,6 +217,7 @@ export type Database = {
           archived_at?: string | null;
           created_at?: string;
           current_step?: string;
+          first_overdue_prompted_at?: string | null;
           id?: string;
           last_activity_date?: string | null;
           name?: string;
