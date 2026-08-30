@@ -2,10 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/auth/AuthProvider';
+import { KOFI_URL } from '@/lib/links';
 import { type ThemeColors, type ThemePreference, useThemeColors, useThemePreference } from '@/theme';
 
 const APPEARANCE_OPTIONS: { key: ThemePreference; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
@@ -38,6 +39,14 @@ export default function SettingsScreen() {
     } catch (err) {
       setDeleting(false);
       Alert.alert('Could not delete account', err instanceof Error ? err.message : 'Please try again.');
+    }
+  };
+
+  const openSupportLink = async () => {
+    try {
+      await Linking.openURL(KOFI_URL);
+    } catch {
+      Alert.alert('Could not open link', 'Please try again.');
     }
   };
 
@@ -127,6 +136,9 @@ export default function SettingsScreen() {
         )}
       </View>
 
+      <Pressable style={styles.supportLinkWrapper} onPress={openSupportLink} hitSlop={8}>
+        <Text style={styles.supportLink}>☕ Support Steady</Text>
+      </Pressable>
       <Text style={styles.versionText}>Steady v{Constants.expoConfig?.version ?? '1.0.0'}</Text>
     </SafeAreaView>
   );
@@ -220,5 +232,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   deleteButtonDisabled: { opacity: 0.4 },
   deleteButtonText: { color: colors.surface, fontSize: 14, fontWeight: '700' },
-  versionText: { textAlign: 'center', fontSize: 12, color: colors.textSecondary, marginTop: 'auto', marginBottom: 20 },
+  supportLinkWrapper: { marginTop: 'auto', paddingVertical: 4, alignItems: 'center' },
+  supportLink: { fontSize: 13, color: colors.textSecondary },
+  versionText: { textAlign: 'center', fontSize: 12, color: colors.textSecondary, marginTop: 4, marginBottom: 20 },
 });
