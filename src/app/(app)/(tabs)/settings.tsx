@@ -87,6 +87,10 @@ export default function SettingsScreen() {
         <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
       </Pressable>
 
+      <Pressable style={styles.supportLinkWrapper} onPress={openSupportLink} hitSlop={8}>
+        <Text style={styles.supportLink}>☕ Support Steady</Text>
+      </Pressable>
+
       <Pressable style={styles.signOutButton} onPress={confirmSignOut}>
         <Ionicons name="log-out-outline" size={18} color={colors.overdue} />
         <Text style={styles.signOutText}>Sign out</Text>
@@ -136,9 +140,6 @@ export default function SettingsScreen() {
         )}
       </View>
 
-      <Pressable style={styles.supportLinkWrapper} onPress={openSupportLink} hitSlop={8}>
-        <Text style={styles.supportLink}>☕ Support Steady</Text>
-      </Pressable>
       <Text style={styles.versionText}>Steady v{Constants.expoConfig?.version ?? '1.0.0'}</Text>
     </SafeAreaView>
   );
@@ -232,7 +233,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   deleteButtonDisabled: { opacity: 0.4 },
   deleteButtonText: { color: colors.surface, fontSize: 14, fontWeight: '700' },
-  supportLinkWrapper: { marginTop: 'auto', paddingVertical: 4, alignItems: 'center' },
+  supportLinkWrapper: { marginTop: 16, paddingVertical: 4, alignItems: 'center' },
   supportLink: { fontSize: 13, color: colors.textSecondary },
-  versionText: { textAlign: 'center', fontSize: 12, color: colors.textSecondary, marginTop: 4, marginBottom: 20 },
+  versionText: { textAlign: 'center', fontSize: 12, color: colors.textSecondary, marginTop: 'auto', marginBottom: 20 },
 });
