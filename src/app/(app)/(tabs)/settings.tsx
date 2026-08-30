@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,6 +17,7 @@ const APPEARANCE_OPTIONS: { key: ThemePreference; label: string; icon: keyof typ
 export default function SettingsScreen() {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const router = useRouter();
   const { preference, setPreference } = useThemePreference();
   const { session, signOut, deleteAccount } = useAuth();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -69,6 +71,12 @@ export default function SettingsScreen() {
           })}
         </View>
       </View>
+
+      <Pressable style={styles.navRow} onPress={() => router.push('/sponsorship-log')}>
+        <Ionicons name="time-outline" size={18} color={colors.text} />
+        <Text style={styles.navRowText}>Sponsorship Log</Text>
+        <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+      </Pressable>
 
       <Pressable style={styles.signOutButton} onPress={confirmSignOut}>
         <Ionicons name="log-out-outline" size={18} color={colors.overdue} />
@@ -156,6 +164,20 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   appearanceOptionActive: { backgroundColor: colors.primaryLight, borderColor: colors.primary },
   appearanceOptionText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
   appearanceOptionTextActive: { color: colors.primary },
+  navRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginHorizontal: 16,
+    marginTop: 16,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  navRowText: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
   signOutButton: {
     flexDirection: 'row',
     alignItems: 'center',

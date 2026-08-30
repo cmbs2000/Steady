@@ -72,6 +72,7 @@ export default function AppLayout() {
       <Stack.Screen name="reading/new" options={{ title: 'New Reading', presentation: 'modal' }} />
       <Stack.Screen name="add-sponsee" options={{ presentation: 'modal' }} />
       <Stack.Screen name="archived-sponsees" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="sponsorship-log" options={{ title: 'Sponsorship Log' }} />
     </Stack>
   );
 }

@@ -138,3 +138,38 @@ export async function restoreSponsee(id: string) {
   const { error } = await supabase.from('sponsees').update({ archived_at: null }).eq('id', id);
   if (error) throw error;
 }
+
+export interface SponsorshipLogEntry {
+  id: string;
+  name: string;
+  created_at: string;
+  archived_at: string | null;
+  current_step: string;
+}
+
+// Every sponsee the sponsor has ever had, active and archived together --
+// an auto-derived personal record, not a performance metric. No fetch
+// option to exclude archived here on purpose, since the whole point of
+// this view is the combined history.
+export function useSponsorshipLog() {
+  const [entries, setEntries] = useState<SponsorshipLogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refetch = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('sponsees')
+      .select('id, name, created_at, archived_at, current_step')
+      .order('created_at', { ascending: false });
+
+    if (error) setError(error.message);
+    else {
+      setError(null);
+      setEntries(data ?? []);
+    }
+    setLoading(false);
+  }, []);
+
+  return { entries, loading, error, refetch };
+}
